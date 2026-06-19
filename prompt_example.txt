@@ -1,0 +1,23 @@
+{品質詞}
+masterpiece, best quality, amazing quality, newest, very aesthetic, safe, absurdres, highres
+
+{風格, 繪師名稱}
+aesthetic anime style, cinematic lighting, vibrant colors
+
+{角色名稱}
+1girl, solo, egyptian woman
+
+{臉部特徵: 髮色髮飾, 曈色, 表情, etc}
+black hair, straight hair, blunt bangs, gold hair ornament, red eyes, tongue out, winged eyeliner, kohl, seductive expression, looking at viewer
+
+{身體特徵: 胸部, 膚色, 大腿, etc}
+dark skin, medium breasts, bare midriff, bare thighs, bare legs, toned body, navel, skin focus
+
+{衣服}
+egyptian dancer style, sheer waist veil, translucent hip wrap, flowing see-through fabric around legs, ornate bikini briefs, gold-trimmed panties, elaborate gold belt with ankh, see-through egyptian crop top, gold jewelry, gold armlets, gold anklets
+
+{動作}
+standing, dynamic pose, hand on hip, belly dance pose
+
+{背景, 鏡頭角度}
+ancient egyptian temple background, stone pillars, hieroglyphics, giza pyramids in distance, golden hour, desert sunset, dramatic shadows, full body shot, low angle
