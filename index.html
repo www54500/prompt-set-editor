@@ -839,13 +839,64 @@
       renderEditor();
     }
 
+    // Floating non-blocking Toast notification
+    let toastTimeoutId = null;
+    function showToast(message) {
+      let toast = document.getElementById('toast-notification');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-notification';
+        toast.style.cssText = `
+          position: fixed;
+          bottom: 32px;
+          left: 50%;
+          transform: translateX(-50%) translateY(20px);
+          background: rgba(16, 185, 129, 0.95);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          color: white;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+          z-index: 2000;
+          opacity: 0;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: none;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        `;
+        document.body.appendChild(toast);
+      }
+      
+      toast.innerHTML = `<i data-lucide="check-circle" style="width:16px;height:16px"></i> ` + message;
+      // Refresh the icon inside the toast
+      lucide.createIcons({ attrs: { style: 'width:16px;height:16px' }, nameAttr: 'data-lucide' });
+      
+      // Animate in
+      setTimeout(() => {
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+        toast.style.opacity = '1';
+      }, 10);
+      
+      // Auto fade out
+      if (toastTimeoutId) {
+        clearTimeout(toastTimeoutId);
+      }
+      toastTimeoutId = setTimeout(() => {
+        toast.style.transform = 'translateX(-50%) translateY(20px)';
+        toast.style.opacity = '0';
+      }, 2000);
+    }
+
     // Copy compiler
     function copyBlockCompiledText(id) {
       const block = state.blocks.find(b => b.id === id);
       if (block) {
         const text = compilePrompt(block, state.commonPrompt, '\n\n');
         navigator.clipboard.writeText(text)
-          .then(() => alert('已成功複製 Prompt 到剪貼簿！'))
+          .then(() => showToast('已成功複製 Prompt 到剪貼簿！'))
           .catch(e => console.error('Copy failed:', e));
       }
     }
@@ -861,10 +912,11 @@
       document.getElementById('export-modal').style.display = 'none';
     }
 
+    // Copy batch txt
     function copyBatchText() {
       const txt = document.getElementById('export-textarea').value;
       navigator.clipboard.writeText(txt)
-        .then(() => alert('已複製所有批次 Prompt 到剪貼簿！'))
+        .then(() => showToast('已複製所有批次 Prompt 到剪貼簿！'))
         .catch(e => console.error('Copy failed:', e));
     }
 
