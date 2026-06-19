@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🪄 Prompt Set Editor - A1111 批次套圖工具</title>
+  <!-- Google Fonts Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <!-- SortableJS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  
+  <style>
+    :root {
+      --bg-color: #09090b;
+      --panel-bg: #18181b;
+      --card-bg: #222227;
+      --card-border: #334155;
+      --input-bg: #0f172a;
+      --input-border: #1e293b;
+      --text-color: #f1f5f9;
+      --text-muted: #94a3b8;
+      
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.15);
+      
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.15);
+      
+      --rose: #ef4444;
+      --rose-hover: #dc2626;
+      
+      --font-title: 'Outfit', 'Inter', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 0%, rgba(139, 92, 246, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-color);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      padding-top: 80px;
+      padding-bottom: 60px;
+    }
+
+    /* Glassmorphism Navigation */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      background: rgba(9, 9, 11, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      background: linear-gradient(135deg, var(--primary), #a855f7);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .logo-text {
+      font-family: var(--font-title);
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #f1f5f9, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #1e1e24;
+      border: 1px solid #3f3f46;
+      color: #cbd5e1;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn:hover {
+      background: #27272a;
+      border-color: #52525b;
+      color: #fff;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), #4f46e5);
+      border: none;
+      color: white;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .btn-danger:hover {
+      background: var(--rose);
+      border-color: var(--rose);
+      color: white;
+    }
+
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    /* Workspace Control Panel */
+    .control-panel {
+      background: rgba(24, 24, 27, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .control-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      min-width: 130px;
+    }
+
+    .pills-container {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      background: #18181b;
+      border: 1px solid #27272a;
+      color: #a1a1aa;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pill-btn:hover {
+      background: #27272a;
+      color: #fff;
+    }
+
+    .pill-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    .pill-btn.compare-active {
+      background: var(--emerald);
+      border-color: var(--emerald);
+      color: white;
+      box-shadow: 0 2px 8px var(--emerald-glow);
+    }
+
+    /* Locked Common Prompt Container */
+    .common-prompt-container {
+      background: rgba(99, 102, 241, 0.02);
+      border: 1px solid rgba(99, 102, 241, 0.15);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 32px;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.03);
+    }
+
+    .common-prompt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .common-prompt-title {
+      font-family: var(--font-title);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #a5b4fc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Prompt Cards Layout */
+    .prompt-cards-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .prompt-card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      padding: 24px;
+      transition: box-shadow 0.2s, border-color 0.2s;
+      position: relative;
+    }
+
+    .prompt-card:hover {
+      border-color: #3f3f46;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .prompt-card.card-collapsed .categories-grid {
+      display: none;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #27272a;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .prompt-card.card-collapsed .card-header {
+      border-bottom: none;
+      padding-bottom: 0;
+      margin-bottom: 0;
+    }
+
+    .card-title-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-grow: 1;
+    }
+
+    .card-drag-handle {
+      color: #4b5563;
+      cursor: grab;
+      padding: 4px;
+      border-radius: 4px;
+    }
+
+    .card-drag-handle:hover {
+      background: #27272a;
+      color: #9ca3af;
+    }
+
+    .card-name-input {
+      background: transparent;
+      border: none;
+      color: #f1f5f9;
+      font-family: var(--font-title);
+      font-size: 1.05rem;
+      font-weight: 600;
+      outline: none;
+      border-bottom: 1px dashed transparent;
+      padding: 2px 4px;
+      transition: border-color 0.2s;
+      width: 240px;
+    }
+
+    .card-name-input:focus {
+      border-color: var(--primary);
+    }
+
+    .card-compiled-preview {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 400px;
+      margin-left: 16px;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Grid of Category Inputs */
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .category-box {
+      background: #0f0f12;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .category-box.collapsed {
+      opacity: 0.6;
+    }
+
+    .category-box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .category-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .category-box.compare-highlight {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.02);
+    }
+
+    .category-box.compare-highlight .category-label {
+      color: #34d399;
+    }
+
+    .btn-icon-sm {
+      background: none;
+      border: none;
+      color: #4b5563;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      border-radius: 4px;
+    }
+
+    .btn-icon-sm:hover {
+      background: #27272a;
+      color: white;
+    }
+
+    .category-textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      font-family: var(--font-body);
+      line-height: 1.4;
+      resize: vertical;
+      min-height: 48px;
+      height: 48px;
+      padding: 0;
+      transition: height 0.2s, opacity 0.2s;
+    }
+
+    .category-box.collapsed .category-textarea {
+      height: 0px !important;
+      min-height: 0px !important;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-box {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #27272a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-family: var(--font-title);
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+
+    .modal-textarea {
+      width: 100%;
+      height: 350px;
+      background: #09090b;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-family: monospace;
+      font-size: 0.85rem;
+      padding: 12px;
+      outline: none;
+      resize: none;
+    }
+
+    .modal-footer {
+      padding: 20px;
+      border-top: 1px solid #27272a;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Utilities */
+    .empty-state {
+      padding: 60px;
+      text-align: center;
+      border: 2px dashed #27272a;
+      border-radius: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Hidden Uploader */
+    #file-input {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <div class="logo-icon"><i data-lucide="sparkles" style="width:18px;height:18px"></i></div>
+      <div class="logo-text">Prompt Set Editor</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn" onclick="triggerImport()"><i data-lucide="upload" style="width:16px;height:16px"></i>匯入 JSON</button>
+      <button class="btn" onclick="exportWorkspace()"><i data-lucide="download" style="width:16px;height:16px"></i>匯出 JSON</button>
+      <button class="btn btn-primary" onclick="openExportModal()"><i data-lucide="file-text" style="width:16px;height:16px"></i>A1111 批次匯出 (Convert)</button>
+    </div>
+  </header>
+
+  <main>
+    <input type="file" id="file-input" accept=".json" onchange="importWorkspace(event)">
+
+    <!-- 全域控制面板 -->
+    <section class="control-panel">
+      <div class="control-row">
+        <div class="control-label"><i data-lucide="folder" style="width:14px;height:14px;vertical-align:middle;margin-right:6px"></i>全域卡片摺疊：</div>
+        <div class="pills-container">
+          <button class="pill-btn" onclick="setAllBlocksCollapsed(false)">展開所有卡片</button>
+          <button class="pill-btn" onclick="setAllBlocksCollapsed(true)">收合所有卡片</button>
+        </div>
+      </div>
+      <div class="control-row">
+        <div class="control-label"><i data-lucide="sliders" style="width:14px;height:14px;vertical-align:middle;margin-right:6px"></i>跨卡片比對分類：</div>
+        <div class="pills-container" id="compare-pills">
+          <button class="pill-btn active" id="compare-all-btn" onclick="setCompareCategory(null)">顯示全部分類</button>
+          <!-- Category comparative pills rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Common Prompt -->
+    <section class="common-prompt-container" id="common-prompt-card">
+      <!-- Rendered dynamically -->
+    </section>
+
+    <!-- Prompt Cards -->
+    <section class="prompt-cards-container" id="prompt-cards-root">
+      <!-- Rendered dynamically -->
+    </section>
+
+    <div style="margin-top: 24px; display: flex; justify-content: center;">
+      <button class="btn btn-primary" style="padding: 12px 24px;" onclick="addBlock()">
+        <i data-lucide="plus" style="width:18px;height:18px"></i>新增 Prompt 卡片 (Block)
+      </button>
+    </div>
+  </main>
+
+  <!-- Export Batch Modal -->
+  <div class="modal-overlay" id="export-modal" onclick="closeExportModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">A1111 批次匯出 (一行一組 Prompt)</h3>
+        <button class="btn-icon-sm" onclick="closeExportModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <textarea class="modal-textarea" id="export-textarea" readonly></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="copyBatchText()"><i data-lucide="copy" style="width:16px;height:16px"></i>複製全部</button>
+        <button class="btn btn-primary" onclick="downloadBatchFile()"><i data-lucide="download" style="width:16px;height:16px"></i>下載 .txt 檔案</button>
+        <button class="btn" onclick="closeExportModal()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Categories and metadata
+    const CATEGORIES = {
+      quality: { label: '品質詞', emoji: '✨' },
+      style: { label: '風格, 繪師名稱', emoji: '🎨' },
+      character: { label: '角色名稱', emoji: '👤' },
+      face: { label: '臉部特徵: 髮色髮飾, 曈色, 表情, etc', emoji: '👁️' },
+      body: { label: '身體特徵: 胸部, 腰, 屁股, 大腿, 腳, etc', emoji: '💪' },
+      clothes: { label: '衣服', emoji: '👗' },
+      action: { label: '動作', emoji: '🏃' },
+      background: { label: '背景, 鏡頭角度', emoji: '🌅' }
+    };
+    const CATEGORY_KEYS = Object.keys(CATEGORIES);
+
+    // Initial state
+    let state = {
+      commonPrompt: {
+        quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: ''
+      },
+      blocks: [],
+      activeCompareCategory: null
+    };
+
+    // Load state from localStorage on startup
+    function loadState() {
+      try {
+        const stored = localStorage.getItem('prompt_set_editor_state');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (validateWorkspaceSchema(parsed)) {
+            state = parsed;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load state:', e);
+      }
+      
+      // Scaffolding a default block if empty
+      if (state.blocks.length === 0) {
+        state.blocks.push({
+          id: generateId(),
+          name: 'Block #1',
+          isCollapsed: false,
+          collapsedCategories: {},
+          categories: {
+            quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: ''
+          }
+        });
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('prompt_set_editor_state', JSON.stringify(state));
+    }
+
+    function generateId() {
+      return 'id-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+    }
+
+    function compilePrompt(block, commonPrompt) {
+      const parts = [];
+      for (const key of CATEGORY_KEYS) {
+        const commonVal = (commonPrompt[key] || '').trim();
+        const blockVal = (block.categories[key] || '').trim();
+        let merged = '';
+        if (commonVal && blockVal) {
+          merged = commonVal + ', ' + blockVal;
+        } else {
+          merged = commonVal || blockVal;
+        }
+        if (merged) {
+          parts.push(merged);
+        }
+      }
+      return parts.join(', ');
+    }
+
+    function validateWorkspaceSchema(data) {
+      if (!data || typeof data !== 'object') return false;
+      if (!data.commonPrompt || typeof data.commonPrompt !== 'object') return false;
+      if (!Array.isArray(data.blocks)) return false;
+      return true;
+    }
+
+    // App core handlers
+    function addBlock() {
+      const newBlock = {
+        id: generateId(),
+        name: `Block #${state.blocks.length + 1}`,
+        isCollapsed: false,
+        collapsedCategories: {},
+        categories: {
+          quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: ''
+        }
+      };
+      state.blocks.push(newBlock);
+      saveState();
+      renderEditor();
+    }
+
+    function cloneBlock(id) {
+      const idx = state.blocks.findIndex(b => b.id === id);
+      if (idx === -1) return;
+      const original = state.blocks[idx];
+      const clone = {
+        id: generateId(),
+        name: `${original.name} (Copy)`,
+        isCollapsed: original.isCollapsed,
+        collapsedCategories: { ...original.collapsedCategories },
+        categories: { ...original.categories }
+      };
+      state.blocks.splice(idx + 1, 0, clone);
+      saveState();
+      renderEditor();
+    }
+
+    function deleteBlock(id) {
+      if (state.blocks.length <= 1) {
+        alert('請至少保留一個 Prompt 卡片！');
+        return;
+      }
+      if (!confirm('確定要刪除此 Prompt 卡片嗎？')) return;
+      state.blocks = state.blocks.filter(b => b.id !== id);
+      saveState();
+      renderEditor();
+    }
+
+    function updateCommonField(key, value) {
+      state.commonPrompt[key] = value;
+      saveState();
+      updatePreviews();
+    }
+
+    function updateBlockField(id, key, value) {
+      const block = state.blocks.find(b => b.id === id);
+      if (block) {
+        block.categories[key] = value;
+        saveState();
+        updatePreviews();
+      }
+    }
+
+    function updateBlockName(id, value) {
+      const block = state.blocks.find(b => b.id === id);
+      if (block) {
+        block.name = value;
+        saveState();
+      }
+    }
+
+    // Interactive collapse controls
+    function setAllBlocksCollapsed(collapsed) {
+      for (const block of state.blocks) {
+        block.isCollapsed = collapsed;
+      }
+      saveState();
+      renderEditor();
+    }
+
+    function toggleBlockCollapsed(id) {
+      const block = state.blocks.find(b => b.id === id);
+      if (block) {
+        block.isCollapsed = !block.isCollapsed;
+        saveState();
+        renderEditor();
+      }
+    }
+
+    function toggleCategoryCollapse(blockId, key) {
+      if (blockId === 'common') {
+        const isCollapsed = !state.commonPrompt.collapsedCategories?.[key];
+        if (!state.commonPrompt.collapsedCategories) {
+          state.commonPrompt.collapsedCategories = {};
+        }
+        state.commonPrompt.collapsedCategories[key] = isCollapsed;
+      } else {
+        const block = state.blocks.find(b => b.id === blockId);
+        if (block) {
+          const isCollapsed = !block.collapsedCategories[key];
+          block.collapsedCategories[key] = isCollapsed;
+        }
+      }
+      saveState();
+      renderEditor();
+    }
+
+    function toggleAllCategoriesInBlock(id, collapse) {
+      if (id === 'common') {
+        if (!state.commonPrompt.collapsedCategories) {
+          state.commonPrompt.collapsedCategories = {};
+        }
+        for (const key of CATEGORY_KEYS) {
+          state.commonPrompt.collapsedCategories[key] = collapse;
+        }
+      } else {
+        const block = state.blocks.find(b => b.id === id);
+        if (block) {
+          for (const key of CATEGORY_KEYS) {
+            block.collapsedCategories[key] = collapse;
+          }
+        }
+      }
+      saveState();
+      renderEditor();
+    }
+
+    function setCompareCategory(key) {
+      state.activeCompareCategory = key;
+      saveState();
+      renderEditor();
+    }
+
+    // Copy compiler
+    function copyBlockCompiledText(id) {
+      const block = state.blocks.find(b => b.id === id);
+      if (block) {
+        const text = compilePrompt(block, state.commonPrompt);
+        navigator.clipboard.writeText(text)
+          .then(() => alert('已成功複製 Prompt 到剪貼簿！'))
+          .catch(e => console.error('Copy failed:', e));
+      }
+    }
+
+    // Modal view trigger
+    function openExportModal() {
+      const lines = state.blocks.map(b => compilePrompt(b, state.commonPrompt));
+      document.getElementById('export-textarea').value = lines.join('\n');
+      document.getElementById('export-modal').style.display = 'flex';
+    }
+
+    function closeExportModal() {
+      document.getElementById('export-modal').style.display = 'none';
+    }
+
+    function copyBatchText() {
+      const txt = document.getElementById('export-textarea').value;
+      navigator.clipboard.writeText(txt)
+        .then(() => alert('已複製所有批次 Prompt 到剪貼簿！'))
+        .catch(e => console.error('Copy failed:', e));
+    }
+
+    function downloadBatchFile() {
+      const txt = document.getElementById('export-textarea').value;
+      const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'prompts-batch.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Import / Export JSON State Workspace
+    function triggerImport() {
+      document.getElementById('file-input').click();
+    }
+
+    function importWorkspace(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (validateWorkspaceSchema(parsed)) {
+            state = parsed;
+            saveState();
+            renderEditor();
+            alert('工作區匯入成功！');
+          } else {
+            alert('無效的工作區檔案結構！');
+          }
+        } catch (err) {
+          alert('解析 JSON 檔案時發生錯誤：' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = ''; // Reset uploader input
+    }
+
+    function exportWorkspace() {
+      const txt = JSON.stringify(state, null, 2);
+      const blob = new Blob([txt], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'prompt-set-workspace.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Update individual block preview tags in place
+    function updatePreviews() {
+      for (const block of state.blocks) {
+        const el = document.getElementById(`preview-${block.id}`);
+        if (el) {
+          el.innerText = `[${compilePrompt(block, state.commonPrompt)}]`;
+        }
+      }
+    }
+
+    // Main Renderer Loop
+    function renderEditor() {
+      // 1. Render Compare Row Panel Pills
+      const pillsContainer = document.getElementById('compare-pills');
+      pillsContainer.innerHTML = '';
+      
+      const allActive = state.activeCompareCategory === null;
+      const allBtn = document.createElement('button');
+      allBtn.className = `pill-btn ${allActive ? 'active' : ''}`;
+      allBtn.innerHTML = '顯示全部分類';
+      allBtn.onclick = () => setCompareCategory(null);
+      pillsContainer.appendChild(allBtn);
+      
+      for (const key of CATEGORY_KEYS) {
+        const cat = CATEGORIES[key];
+        const isActive = state.activeCompareCategory === key;
+        const btn = document.createElement('button');
+        btn.className = `pill-btn ${isActive ? 'compare-active' : ''}`;
+        btn.innerHTML = `${cat.emoji} ${cat.label}`;
+        btn.onclick = () => setCompareCategory(key);
+        pillsContainer.appendChild(btn);
+      }
+
+      // 2. Render Common Prompt
+      const commonRoot = document.getElementById('common-prompt-card');
+      const isCommonAllCollapsed = CATEGORY_KEYS.every(k => state.commonPrompt.collapsedCategories?.[k] === true);
+      
+      let commonFieldsHTML = '';
+      for (const key of CATEGORY_KEYS) {
+        const cat = CATEGORIES[key];
+        const isFieldCollapsed = state.commonPrompt.collapsedCategories?.[key] === true;
+        const isHighlighted = state.activeCompareCategory === key;
+        const isHiddenByCompare = state.activeCompareCategory !== null && !isHighlighted;
+        
+        commonFieldsHTML += `
+          <div class="category-box ${isFieldCollapsed || isHiddenByCompare ? 'collapsed' : ''} ${isHighlighted ? 'compare-highlight' : ''}">
+            <div class="category-box-header">
+              <span class="category-label">${cat.emoji} ${cat.label}</span>
+              <button class="btn-icon-sm" onclick="toggleCategoryCollapse('common', '${key}')" title="${isFieldCollapsed ? '展開' : '收合'}">
+                <i data-lucide="${isFieldCollapsed ? 'maximize-2' : 'minimize-2'}" style="width:12px;height:12px"></i>
+              </button>
+            </div>
+            <textarea class="category-textarea" 
+              placeholder="輸入 ${cat.label}..."
+              oninput="updateCommonField('${key}', this.value)"
+            >${state.commonPrompt[key] || ''}</textarea>
+          </div>
+        `;
+      }
+
+      commonRoot.innerHTML = `
+        <div class="common-prompt-header">
+          <div class="common-prompt-title">
+            <i data-lucide="pin" style="width:16px;height:16px;transform:rotate(45deg)"></i>
+            📌 Common Prompt (全域前置詞 - 會按分類對應合併)
+          </div>
+          <div class="card-actions">
+            <button class="btn-icon-sm" style="color:var(--text-muted)" onclick="toggleAllCategoriesInBlock('common', ${!isCommonAllCollapsed})" title="摺疊/展開全部">
+              <i data-lucide="${isCommonAllCollapsed ? 'expand' : 'fold-horizontal'}" style="width:14px;height:14px"></i>
+            </button>
+          </div>
+        </div>
+        <div class="categories-grid">
+          ${commonFieldsHTML}
+        </div>
+      `;
+
+      // 3. Render Cards list
+      const cardsRoot = document.getElementById('prompt-cards-root');
+      cardsRoot.innerHTML = '';
+
+      if (state.blocks.length === 0) {
+        cardsRoot.innerHTML = `
+          <div class="empty-state">
+            <i data-lucide="clipboard-list" style="width:48px;height:48px;color:var(--text-muted)"></i>
+            <p>目前沒有任何 Prompt 卡片。請點選下方按鈕新增！</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      state.blocks.forEach((block, idx) => {
+        const isCardCollapsed = block.isCollapsed;
+        const isBlockAllCollapsed = CATEGORY_KEYS.every(k => block.collapsedCategories[k] === true);
+        const compiled = compilePrompt(block, state.commonPrompt);
+
+        let fieldsHTML = '';
+        for (const key of CATEGORY_KEYS) {
+          const cat = CATEGORIES[key];
+          const isFieldCollapsed = block.collapsedCategories[key] === true;
+          const isHighlighted = state.activeCompareCategory === key;
+          const isHiddenByCompare = state.activeCompareCategory !== null && !isHighlighted;
+
+          fieldsHTML += `
+            <div class="category-box ${isFieldCollapsed || isHiddenByCompare ? 'collapsed' : ''} ${isHighlighted ? 'compare-highlight' : ''}">
+              <div class="category-box-header">
+                <span class="category-label">${cat.emoji} ${cat.label}</span>
+                <button class="btn-icon-sm" onclick="toggleCategoryCollapse('${block.id}', '${key}')" title="${isFieldCollapsed ? '展開' : '收合'}">
+                  <i data-lucide="${isFieldCollapsed ? 'maximize-2' : 'minimize-2'}" style="width:12px;height:12px"></i>
+                </button>
+              </div>
+              <textarea class="category-textarea" 
+                placeholder="輸入 ${cat.label}..."
+                oninput="updateBlockField('${block.id}', '${key}', this.value)"
+              >${block.categories[key] || ''}</textarea>
+            </div>
+          `;
+        }
+
+        const card = document.createElement('div');
+        card.className = `prompt-card ${isCardCollapsed ? 'card-collapsed' : ''}`;
+        card.dataset.id = block.id;
+
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="card-title-area">
+              <span class="card-drag-handle"><i data-lucide="grip-vertical" style="width:16px;height:16px"></i></span>
+              <input type="text" class="card-name-input" value="${block.name}" onchange="updateBlockName('${block.id}', this.value)">
+              ${isCardCollapsed ? `<span class="card-compiled-preview" id="preview-${block.id}">[${compiled}]</span>` : ''}
+            </div>
+            <div class="card-actions">
+              <button class="btn" style="padding: 6px 12px;" onclick="toggleBlockCollapsed('${block.id}')">
+                <i data-lucide="${isCardCollapsed ? 'chevron-down' : 'chevron-up'}" style="width:14px;height:14px"></i>
+                ${isCardCollapsed ? '展開卡片' : '收合卡片'}
+              </button>
+              ${!isCardCollapsed ? `
+                <button class="btn" style="padding: 6px 12px;" onclick="toggleAllCategoriesInBlock('${block.id}', ${!isBlockAllCollapsed})" title="摺疊/展開全部分類">
+                  <i data-lucide="${isBlockAllCollapsed ? 'expand' : 'fold-horizontal'}" style="width:14px;height:14px"></i>
+                </button>
+              ` : ''}
+              <button class="btn" style="padding: 6px 12px;" onclick="copyBlockCompiledText('${block.id}')">
+                <i data-lucide="copy" style="width:14px;height:14px"></i>複製文字
+              </button>
+              <button class="btn" style="padding: 6px 12px;" onclick="cloneBlock('${block.id}')">
+                <i data-lucide="copy-plus" style="width:14px;height:14px"></i>複製
+              </button>
+              <button class="btn btn-danger" style="padding: 6px 12px;" onclick="deleteBlock('${block.id}')">
+                <i data-lucide="trash-2" style="width:14px;height:14px"></i>刪除
+              </button>
+            </div>
+          </div>
+          <div class="categories-grid">
+            ${fieldsHTML}
+          </div>
+        `;
+
+        cardsRoot.appendChild(card);
+      });
+
+      // Refresh icons
+      lucide.createIcons();
+      // Initialize drag and drop sorting
+      initDragAndDrop();
+    }
+
+    let sortableInstance = null;
+    function initDragAndDrop() {
+      const el = document.getElementById('prompt-cards-root');
+      if (!el) return;
+      if (sortableInstance) {
+        sortableInstance.destroy();
+      }
+      // Handle potential offline fallback
+      if (typeof Sortable === 'undefined') {
+        console.warn('SortableJS is not loaded. Drag and drop sorting is disabled.');
+        return;
+      }
+      sortableInstance = new Sortable(el, {
+        handle: '.card-drag-handle',
+        animation: 150,
+        onEnd: function (evt) {
+          const movedBlock = state.blocks.splice(evt.oldIndex, 1)[0];
+          state.blocks.splice(evt.newIndex, 0, movedBlock);
+          saveState();
+          renderEditor();
+        }
+      });
+    }
+
+    // App Startup
+    document.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      renderEditor();
+    });
+  </script>
+</body>
+</html>
