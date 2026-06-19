@@ -597,14 +597,15 @@
       body: { label: '身體特徵: 胸部, 腰, 屁股, 大腿, 腳, etc', emoji: '💪' },
       clothes: { label: '衣服', emoji: '👗' },
       action: { label: '動作', emoji: '🏃' },
-      background: { label: '背景, 鏡頭角度', emoji: '🌅' }
+      background: { label: '背景, 鏡頭角度', emoji: '🌅' },
+      lora: { label: 'lora', emoji: '💿' }
     };
     const CATEGORY_KEYS = Object.keys(CATEGORIES);
 
     // Initial state
     let state = {
       commonPrompt: {
-        quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: ''
+        quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: '', lora: ''
       },
       blocks: [],
       activeCompareCategory: null
@@ -618,6 +619,28 @@
           const parsed = JSON.parse(stored);
           if (validateWorkspaceSchema(parsed)) {
             state = parsed;
+            // Normalize categories to ensure new keys (like lora) exist
+            if (!state.commonPrompt.collapsedCategories) {
+              state.commonPrompt.collapsedCategories = {};
+            }
+            for (const key of CATEGORY_KEYS) {
+              if (state.commonPrompt[key] === undefined) {
+                state.commonPrompt[key] = '';
+              }
+            }
+            state.blocks.forEach(block => {
+              if (!block.collapsedCategories) {
+                block.collapsedCategories = {};
+              }
+              if (!block.categories) {
+                block.categories = {};
+              }
+              for (const key of CATEGORY_KEYS) {
+                if (block.categories[key] === undefined) {
+                  block.categories[key] = '';
+                }
+              }
+            });
           }
         }
       } catch (e) {
@@ -632,7 +655,7 @@
           isCollapsed: false,
           collapsedCategories: {},
           categories: {
-            quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: ''
+            quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: '', lora: ''
           }
         });
       }
@@ -646,7 +669,7 @@
       return 'id-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
     }
 
-    function compilePrompt(block, commonPrompt) {
+    function compilePrompt(block, commonPrompt, separator = ', ') {
       const parts = [];
       for (const key of CATEGORY_KEYS) {
         const commonVal = (commonPrompt[key] || '').trim();
@@ -661,7 +684,7 @@
           parts.push(merged);
         }
       }
-      return parts.join(', ');
+      return parts.join(separator);
     }
 
     function validateWorkspaceSchema(data) {
@@ -679,7 +702,7 @@
         isCollapsed: false,
         collapsedCategories: {},
         categories: {
-          quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: ''
+          quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: '', lora: ''
         }
       };
       state.blocks.push(newBlock);
@@ -803,7 +826,7 @@
     function copyBlockCompiledText(id) {
       const block = state.blocks.find(b => b.id === id);
       if (block) {
-        const text = compilePrompt(block, state.commonPrompt);
+        const text = compilePrompt(block, state.commonPrompt, '\n\n');
         navigator.clipboard.writeText(text)
           .then(() => alert('已成功複製 Prompt 到剪貼簿！'))
           .catch(e => console.error('Copy failed:', e));

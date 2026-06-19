@@ -18,7 +18,7 @@ The application compiles multiple cards (prompt blocks) prepended with a "Common
 ## 2. Requirements
 
 1. **Lightweight & Portable**: Single HTML file `index.html` containing all markup, styles, and logic.
-2. **Category-based Structure**: Every prompt block contains exactly 8 specific categories:
+2. **Category-based Structure**: Every prompt block contains exactly 9 specific categories:
    - `{品質詞}` (Quality)
    - `{風格, 繪師名稱}` (Style / Artist)
    - `{角色名稱}` (Character)
@@ -27,14 +27,15 @@ The application compiles multiple cards (prompt blocks) prepended with a "Common
    - `{衣服}` (Clothing)
    - `{動作}` (Pose / Action)
    - `{背景, 鏡頭角度}` (Background / Camera)
+   - `{lora}` (LoRA / Addons)
 3. **Common Prompt**: A special locked card at the top. The editor prepends its content to the corresponding categories of all other categories during compilation.
 4. **Drag-and-Drop Sorting**: Drag handles on each prompt block card to adjust their execution order.
 5. **Card Operations**: 
-   - `Copy Text`: Copies the compiled prompt of that specific block.
+   - `Copy Text`: Copies the compiled prompt of that specific block, formatted with each non-empty category on its own line, separated by an empty line (`\n\n`).
    - `Clone`: Duplicates the card block.
    - `Delete`: Deletes the card block.
 6. **Workspace Export/Import**: Download/upload the entire state (JSON) to save work.
-7. **A1111 Batch Export**: Combines and compiles all active blocks into a multi-line string (one block per line) for A1111 script input.
+7. **A1111 Batch Export**: Combines and compiles all active blocks into a multi-line string (one block per line, categories joined with `, `) for A1111 script input.
 8. **Collapse/Expand Mechanics**:
    - Individual category collapse button `[-]` / `[+]` on each category input box.
    - Card collapse button (collapse all categories inside a card, showing only a preview summary).
@@ -60,7 +61,8 @@ let state = {
     body: "",
     clothes: "",
     action: "",
-    background: ""
+    background: "",
+    lora: ""
   },
   blocks: [
     {
@@ -80,7 +82,8 @@ let state = {
         body: "",
         clothes: "",
         action: "",
-        background: ""
+        background: "",
+        lora: ""
       }
     }
   ],
@@ -90,13 +93,15 @@ let state = {
 
 ### 3.3 Compilation Logic
 For each block, compile a final prompt string:
-1. Iterate through categories in the specified order: `quality`, `style`, `character`, `face`, `body`, `clothes`, `action`, `background`.
+1. Iterate through categories in the specified order: `quality`, `style`, `character`, `face`, `body`, `clothes`, `action`, `background`, `lora`.
 2. For each category `key`:
    - Let `commonVal = state.commonPrompt[key]`
    - Let `blockVal = block.categories[key]`
    - If both have text: join them with a comma `commonVal + ", " + blockVal`
    - If only one has text: use that value.
-3. Join the non-empty categories using `", "` (comma followed by space) to produce the compiled prompt string.
+3. Join the non-empty categories using the requested separator:
+   - For **Individual Clipboard Copying**: join using `\n\n` (double newline) to display each category on its own line.
+   - For **Batch Exporting (A1111 format)**: join using `, ` (comma followed by space) to produce a single-line prompt per block.
 
 ---
 

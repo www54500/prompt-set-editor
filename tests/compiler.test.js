@@ -77,7 +77,7 @@ test('Editor State and Collapse Operations', async (t) => {
     state
   } = exports;
 
-  // Initialize a mock state for testing
+  // Initialize a mock state for testing (including new lora category)
   state.commonPrompt = {
     quality: 'masterpiece',
     style: 'anime style',
@@ -86,7 +86,8 @@ test('Editor State and Collapse Operations', async (t) => {
     body: '',
     clothes: '',
     action: '',
-    background: ''
+    background: '',
+    lora: '<lora:detailed:1.0>'
   };
 
   state.blocks = [
@@ -98,7 +99,8 @@ test('Editor State and Collapse Operations', async (t) => {
       categories: {
         quality: 'absurdres',
         character: '1girl',
-        clothes: 'dress'
+        clothes: 'dress',
+        lora: ''
       }
     },
     {
@@ -109,7 +111,8 @@ test('Editor State and Collapse Operations', async (t) => {
       categories: {
         quality: 'highres',
         character: '1boy',
-        clothes: 'suit'
+        clothes: 'suit',
+        lora: '<lora:suit:0.8>'
       }
     }
   ];
@@ -144,10 +147,16 @@ test('Editor State and Collapse Operations', async (t) => {
     assert.strictEqual(state.activeCompareCategory, 'clothes');
   });
 
-  await t.test('batch compile and convert output format', () => {
+  await t.test('batch compile and convert output format (joins with comma)', () => {
     const lines = state.blocks.map(b => compilePrompt(b, state.commonPrompt));
     assert.strictEqual(lines.length, 2);
-    assert.strictEqual(lines[0], 'masterpiece, absurdres, anime style, 1girl, dress');
-    assert.strictEqual(lines[1], 'masterpiece, highres, anime style, 1boy, suit');
+    assert.strictEqual(lines[0], 'masterpiece, absurdres, anime style, 1girl, dress, <lora:detailed:1.0>');
+    assert.strictEqual(lines[1], 'masterpiece, highres, anime style, 1boy, suit, <lora:detailed:1.0>, <lora:suit:0.8>');
+  });
+
+  await t.test('single block copy format (joins with double newlines)', () => {
+    const blockText = compilePrompt(state.blocks[0], state.commonPrompt, '\n\n');
+    const expectedText = 'masterpiece, absurdres\n\nanime style\n\n1girl\n\ndress\n\n<lora:detailed:1.0>';
+    assert.strictEqual(blockText, expectedText);
   });
 });
