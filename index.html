@@ -644,6 +644,9 @@
               if (!block.categories) {
                 block.categories = {};
               }
+              if (block.resolution === undefined) {
+                block.resolution = '';
+              }
               
               // Block-level migration for action key
               if (block.categories.action !== undefined) {
@@ -671,6 +674,7 @@
           name: 'Block #1',
           isCollapsed: false,
           collapsedCategories: {},
+          resolution: '',
           categories: {
             quality: '', style: '', character: '', face: '', body: '', clothes: '', faceAction: '', bodyAction: '', background: '', lora: ''
           }
@@ -718,6 +722,7 @@
         name: `Block #${state.blocks.length + 1}`,
         isCollapsed: false,
         collapsedCategories: {},
+        resolution: '',
         categories: {
           quality: '', style: '', character: '', face: '', body: '', clothes: '', faceAction: '', bodyAction: '', background: '', lora: ''
         }
@@ -736,6 +741,7 @@
         name: `${original.name} (Copy)`,
         isCollapsed: original.isCollapsed,
         collapsedCategories: { ...original.collapsedCategories },
+        resolution: original.resolution || '',
         categories: { ...original.categories }
       };
       state.blocks.splice(idx + 1, 0, clone);
@@ -927,9 +933,30 @@
       }
     }
 
+    function getResolutionFlags(res) {
+      if (!res) return '';
+      const [w, h] = res.split('x');
+      return ` --width ${w} --height ${h}`;
+    }
+
+    function updateBlockResolution(id, value) {
+      const block = state.blocks.find(b => b.id === id);
+      if (block) {
+        block.resolution = value;
+        saveState();
+        updatePreviews();
+      }
+    }
+
     // Modal view trigger
     function openExportModal() {
-      const lines = state.blocks.map(b => compilePrompt(b, state.commonPrompt));
+      const lines = state.blocks.map(b => {
+        let prompt = compilePrompt(b, state.commonPrompt, ', ');
+        if (b.resolution) {
+          prompt += getResolutionFlags(b.resolution);
+        }
+        return prompt;
+      });
       document.getElementById('export-textarea').value = lines.join('\n');
       document.getElementById('export-modal').style.display = 'flex';
     }
@@ -1006,7 +1033,8 @@
       for (const block of state.blocks) {
         const el = document.getElementById(`preview-${block.id}`);
         if (el) {
-          el.innerText = `[${compilePrompt(block, state.commonPrompt)}]`;
+          const compiled = compilePrompt(block, state.commonPrompt) + (block.resolution ? getResolutionFlags(block.resolution) : '');
+          el.innerText = `[${compiled}]`;
         }
       }
     }
@@ -1096,7 +1124,7 @@
       state.blocks.forEach((block, idx) => {
         const isCardCollapsed = block.isCollapsed;
         const isBlockAllCollapsed = CATEGORY_KEYS.every(k => block.collapsedCategories[k] === true);
-        const compiled = compilePrompt(block, state.commonPrompt);
+        const compiled = compilePrompt(block, state.commonPrompt) + (block.resolution ? getResolutionFlags(block.resolution) : '');
 
         let fieldsHTML = '';
         for (const key of CATEGORY_KEYS) {
@@ -1130,6 +1158,16 @@
             <div class="card-title-area">
               <span class="card-drag-handle"><i data-lucide="grip-vertical" style="width:16px;height:16px"></i></span>
               <input type="text" class="card-name-input" value="${block.name}" onchange="updateBlockName('${block.id}', this.value)">
+              <select class="card-resolution-select" onchange="updateBlockResolution('${block.id}', this.value)" style="margin-left: 12px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; outline: none; cursor: pointer;">
+                <option value="">不指定解析度</option>
+                <option value="1344x768" ${block.resolution === '1344x768' ? 'selected' : ''}>w1344 x h768</option>
+                <option value="1216x832" ${block.resolution === '1216x832' ? 'selected' : ''}>w1216 x h832</option>
+                <option value="1152x896" ${block.resolution === '1152x896' ? 'selected' : ''}>w1152 x h896</option>
+                <option value="1024x1024" ${block.resolution === '1024x1024' ? 'selected' : ''}>w1024 x h1024</option>
+                <option value="896x1152" ${block.resolution === '896x1152' ? 'selected' : ''}>w896 x h1152</option>
+                <option value="832x1216" ${block.resolution === '832x1216' ? 'selected' : ''}>w832 x h1216</option>
+                <option value="768x1344" ${block.resolution === '768x1344' ? 'selected' : ''}>w768 x h1344</option>
+              </select>
               ${isCardCollapsed ? `<span class="card-compiled-preview" id="preview-${block.id}">[${compiled}]</span>` : ''}
             </div>
             <div class="card-actions">

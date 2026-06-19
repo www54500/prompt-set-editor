@@ -24,6 +24,8 @@ const makeMockElement = () => ({
   dataset: {}
 });
 
+const mockElements = {};
+
 // Create mocked environment to extract functions and prevent DOM crashes
 const mockEnv = {
   localStorage: {
@@ -33,7 +35,12 @@ const mockEnv = {
   },
   document: {
     addEventListener: () => {},
-    getElementById: () => makeMockElement(),
+    getElementById: (id) => {
+      if (!mockElements[id]) {
+        mockElements[id] = makeMockElement();
+      }
+      return mockElements[id];
+    },
     createElement: () => makeMockElement()
   },
   window: {},
@@ -62,6 +69,9 @@ const runCode = new Function('env', `
     toggleAllCategoriesInBlock,
     setCompareCategory,
     copyBlockADetailerText,
+    getResolutionFlags,
+    updateBlockResolution,
+    openExportModal,
     state
   };
 `);
@@ -82,6 +92,9 @@ test('Editor State and Collapse Operations', async (t) => {
     toggleAllCategoriesInBlock,
     setCompareCategory,
     copyBlockADetailerText,
+    getResolutionFlags,
+    updateBlockResolution,
+    openExportModal,
     state
   } = exports;
 
@@ -189,5 +202,43 @@ test('Editor State and Collapse Operations', async (t) => {
     // background: sunset (should NOT be included!)
     // lora: <lora:detailed:1.0>
     assert.strictEqual(clipboardText, 'masterpiece, absurdres, anime style, looking at viewer, standing, <lora:detailed:1.0>');
+  });
+
+  await t.test('getResolutionFlags mapping check', () => {
+    assert.strictEqual(getResolutionFlags(''), '');
+    assert.strictEqual(getResolutionFlags('1344x768'), ' --width 1344 --height 768');
+    assert.strictEqual(getResolutionFlags('1216x832'), ' --width 1216 --height 832');
+    assert.strictEqual(getResolutionFlags('1152x896'), ' --width 1152 --height 896');
+    assert.strictEqual(getResolutionFlags('1024x1024'), ' --width 1024 --height 1024');
+    assert.strictEqual(getResolutionFlags('896x1152'), ' --width 896 --height 1152');
+    assert.strictEqual(getResolutionFlags('832x1216'), ' --width 832 --height 1216');
+    assert.strictEqual(getResolutionFlags('768x1344'), ' --width 768 --height 1344');
+  });
+
+  await t.test('updateBlockResolution and collapsed previews update check', () => {
+    updateBlockResolution('block-1', '1024x1024');
+    assert.strictEqual(state.blocks[0].resolution, '1024x1024');
+    
+    // Check if the preview element gets updated with the resolution flags
+    const previewEl = mockElements['preview-block-1'];
+    assert.ok(previewEl);
+    assert.strictEqual(previewEl.innerText.includes('--width 1024 --height 1024'), true);
+  });
+
+  await t.test('batch export (openExportModal) includes resolution flags check', () => {
+    state.blocks[0].resolution = '1024x1024';
+    state.blocks[1].resolution = ''; // Empty/None
+
+    openExportModal();
+    
+    const textareaEl = mockElements['export-textarea'];
+    assert.ok(textareaEl);
+    
+    const lines = textareaEl.value.split('\n');
+    assert.strictEqual(lines.length, 2);
+    // Block 1 should have resolution flags appended at the very end
+    assert.strictEqual(lines[0].endsWith('--width 1024 --height 1024'), true);
+    // Block 2 should not have resolution flags appended
+    assert.strictEqual(lines[1].includes('--width'), false);
   });
 });
