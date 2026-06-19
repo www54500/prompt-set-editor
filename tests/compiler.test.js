@@ -39,6 +39,11 @@ const mockEnv = {
   window: {},
   lucide: {
     createIcons: () => {}
+  },
+  navigator: {
+    clipboard: {
+      writeText: () => Promise.resolve()
+    }
   }
 };
 
@@ -47,6 +52,7 @@ const runCode = new Function('env', `
   const document = env.document;
   const window = env.window;
   const lucide = env.lucide;
+  const navigator = env.navigator;
   ${jsContent}
   return { 
     compilePrompt, 
@@ -55,6 +61,7 @@ const runCode = new Function('env', `
     toggleCategoryCollapse,
     toggleAllCategoriesInBlock,
     setCompareCategory,
+    copyBlockADetailerText,
     state
   };
 `);
@@ -74,6 +81,7 @@ test('Editor State and Collapse Operations', async (t) => {
     toggleCategoryCollapse,
     toggleAllCategoriesInBlock,
     setCompareCategory,
+    copyBlockADetailerText,
     state
   } = exports;
 
@@ -87,7 +95,7 @@ test('Editor State and Collapse Operations', async (t) => {
     clothes: '',
     faceAction: 'looking at viewer',
     bodyAction: '',
-    background: '',
+    background: 'sunset',
     lora: '<lora:detailed:1.0>'
   };
 
@@ -155,13 +163,31 @@ test('Editor State and Collapse Operations', async (t) => {
   await t.test('batch compile and convert output format (joins with comma)', () => {
     const lines = state.blocks.map(b => compilePrompt(b, state.commonPrompt));
     assert.strictEqual(lines.length, 2);
-    assert.strictEqual(lines[0], 'masterpiece, absurdres, anime style, 1girl, dress, looking at viewer, standing, <lora:detailed:1.0>');
-    assert.strictEqual(lines[1], 'masterpiece, highres, anime style, 1boy, suit, looking at viewer, smirk, bending over, <lora:detailed:1.0>, <lora:suit:0.8>');
+    assert.strictEqual(lines[0], 'masterpiece, absurdres, anime style, 1girl, dress, looking at viewer, standing, sunset, <lora:detailed:1.0>');
+    assert.strictEqual(lines[1], 'masterpiece, highres, anime style, 1boy, suit, looking at viewer, smirk, bending over, sunset, <lora:detailed:1.0>, <lora:suit:0.8>');
   });
 
   await t.test('single block copy format (joins with double newlines)', () => {
     const blockText = compilePrompt(state.blocks[0], state.commonPrompt, '\n\n');
-    const expectedText = 'masterpiece, absurdres\n\nanime style\n\n1girl\n\ndress\n\nlooking at viewer\n\nstanding\n\n<lora:detailed:1.0>';
+    const expectedText = 'masterpiece, absurdres\n\nanime style\n\n1girl\n\ndress\n\nlooking at viewer\n\nstanding\n\nsunset\n\n<lora:detailed:1.0>';
     assert.strictEqual(blockText, expectedText);
+  });
+
+  await t.test('ADetailer custom compile logic', () => {
+    let clipboardText = '';
+    mockEnv.navigator.clipboard.writeText = (text) => {
+      clipboardText = text;
+      return Promise.resolve();
+    };
+    
+    copyBlockADetailerText('block-1');
+    // quality: masterpiece, absurdres
+    // style: anime style
+    // face: empty
+    // faceAction: looking at viewer
+    // bodyAction: standing
+    // background: sunset (should NOT be included!)
+    // lora: <lora:detailed:1.0>
+    assert.strictEqual(clipboardText, 'masterpiece, absurdres, anime style, looking at viewer, standing, <lora:detailed:1.0>');
   });
 });

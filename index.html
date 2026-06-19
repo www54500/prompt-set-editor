@@ -901,6 +901,32 @@
       }
     }
 
+    // Copy ADetailer (Face Detailer) format
+    function copyBlockADetailerText(id) {
+      const block = state.blocks.find(b => b.id === id);
+      if (block) {
+        const keys = ['quality', 'style', 'face', 'faceAction', 'bodyAction', 'lora'];
+        const parts = [];
+        for (const key of keys) {
+          const commonVal = (state.commonPrompt[key] || '').trim();
+          const blockVal = (block.categories[key] || '').trim();
+          let merged = '';
+          if (commonVal && blockVal) {
+            merged = commonVal + ', ' + blockVal;
+          } else {
+            merged = commonVal || blockVal;
+          }
+          if (merged) {
+            parts.push(merged);
+          }
+        }
+        const text = parts.join(', ');
+        navigator.clipboard.writeText(text)
+          .then(() => showToast('已成功複製 Face Detailer Prompt 到剪貼簿！'))
+          .catch(e => console.error('Copy failed:', e));
+      }
+    }
+
     // Modal view trigger
     function openExportModal() {
       const lines = state.blocks.map(b => compilePrompt(b, state.commonPrompt));
@@ -1118,6 +1144,9 @@
               ` : ''}
               <button class="btn" style="padding: 6px 12px;" onclick="copyBlockCompiledText('${block.id}')">
                 <i data-lucide="copy" style="width:14px;height:14px"></i>複製文字
+              </button>
+              <button class="btn" style="padding: 6px 12px;" onclick="copyBlockADetailerText('${block.id}')" title="複製 Face Detailer (品質、風格、臉部與身體特徵動作、Lora)">
+                <i data-lucide="smile" style="width:14px;height:14px"></i>複製 Face Detailer
               </button>
               <button class="btn" style="padding: 6px 12px;" onclick="cloneBlock('${block.id}')">
                 <i data-lucide="copy-plus" style="width:14px;height:14px"></i>複製
