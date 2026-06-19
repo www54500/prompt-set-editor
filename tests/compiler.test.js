@@ -77,7 +77,7 @@ test('Editor State and Collapse Operations', async (t) => {
     state
   } = exports;
 
-  // Initialize a mock state for testing (including new lora category)
+  // Initialize a mock state for testing (including faceAction, bodyAction, and lora)
   state.commonPrompt = {
     quality: 'masterpiece',
     style: 'anime style',
@@ -85,7 +85,8 @@ test('Editor State and Collapse Operations', async (t) => {
     face: '',
     body: '',
     clothes: '',
-    action: '',
+    faceAction: 'looking at viewer',
+    bodyAction: '',
     background: '',
     lora: '<lora:detailed:1.0>'
   };
@@ -100,6 +101,8 @@ test('Editor State and Collapse Operations', async (t) => {
         quality: 'absurdres',
         character: '1girl',
         clothes: 'dress',
+        faceAction: '',
+        bodyAction: 'standing',
         lora: ''
       }
     },
@@ -112,6 +115,8 @@ test('Editor State and Collapse Operations', async (t) => {
         quality: 'highres',
         character: '1boy',
         clothes: 'suit',
+        faceAction: 'smirk',
+        bodyAction: 'bending over',
         lora: '<lora:suit:0.8>'
       }
     }
@@ -150,13 +155,13 @@ test('Editor State and Collapse Operations', async (t) => {
   await t.test('batch compile and convert output format (joins with comma)', () => {
     const lines = state.blocks.map(b => compilePrompt(b, state.commonPrompt));
     assert.strictEqual(lines.length, 2);
-    assert.strictEqual(lines[0], 'masterpiece, absurdres, anime style, 1girl, dress, <lora:detailed:1.0>');
-    assert.strictEqual(lines[1], 'masterpiece, highres, anime style, 1boy, suit, <lora:detailed:1.0>, <lora:suit:0.8>');
+    assert.strictEqual(lines[0], 'masterpiece, absurdres, anime style, 1girl, dress, looking at viewer, standing, <lora:detailed:1.0>');
+    assert.strictEqual(lines[1], 'masterpiece, highres, anime style, 1boy, suit, looking at viewer, smirk, bending over, <lora:detailed:1.0>, <lora:suit:0.8>');
   });
 
   await t.test('single block copy format (joins with double newlines)', () => {
     const blockText = compilePrompt(state.blocks[0], state.commonPrompt, '\n\n');
-    const expectedText = 'masterpiece, absurdres\n\nanime style\n\n1girl\n\ndress\n\n<lora:detailed:1.0>';
+    const expectedText = 'masterpiece, absurdres\n\nanime style\n\n1girl\n\ndress\n\nlooking at viewer\n\nstanding\n\n<lora:detailed:1.0>';
     assert.strictEqual(blockText, expectedText);
   });
 });

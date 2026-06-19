@@ -18,14 +18,15 @@ The application compiles multiple cards (prompt blocks) prepended with a "Common
 ## 2. Requirements
 
 1. **Lightweight & Portable**: Single HTML file `index.html` containing all markup, styles, and logic.
-2. **Category-based Structure**: Every prompt block contains exactly 9 specific categories:
+2. **Category-based Structure**: Every prompt block contains exactly 10 specific categories:
    - `{品質詞}` (Quality)
    - `{風格, 繪師名稱}` (Style / Artist)
    - `{角色名稱}` (Character)
    - `{臉部特徵: 髮色髮飾, 曈色, 表情, etc}` (Face / Head)
    - `{身體特徵: 胸部, 腰, 屁股, 大腿, 腳, etc}` (Body)
    - `{衣服}` (Clothing)
-   - `{動作}` (Pose / Action)
+   - `{臉部動作}` (Facial Action / Looking)
+   - `{身體動作}` (Body Action / Pose)
    - `{背景, 鏡頭角度}` (Background / Camera)
    - `{lora}` (LoRA / Addons)
 3. **Common Prompt**: A special locked card at the top. The editor prepends its content to the corresponding categories of all other categories during compilation.
@@ -60,7 +61,8 @@ let state = {
     face: "",
     body: "",
     clothes: "",
-    action: "",
+    faceAction: "",
+    bodyAction: "",
     background: "",
     lora: ""
   },
@@ -81,7 +83,8 @@ let state = {
         face: "",
         body: "",
         clothes: "",
-        action: "",
+        faceAction: "",
+        bodyAction: "",
         background: "",
         lora: ""
       }
@@ -93,7 +96,7 @@ let state = {
 
 ### 3.3 Compilation Logic
 For each block, compile a final prompt string:
-1. Iterate through categories in the specified order: `quality`, `style`, `character`, `face`, `body`, `clothes`, `action`, `background`, `lora`.
+1. Iterate through categories in the specified order: `quality`, `style`, `character`, `face`, `body`, `clothes`, `faceAction`, `bodyAction`, `background`, `lora`.
 2. For each category `key`:
    - Let `commonVal = state.commonPrompt[key]`
    - Let `blockVal = block.categories[key]`

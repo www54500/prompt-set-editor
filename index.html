@@ -596,7 +596,8 @@
       face: { label: '臉部特徵: 髮色髮飾, 曈色, 表情, etc', emoji: '👁️' },
       body: { label: '身體特徵: 胸部, 腰, 屁股, 大腿, 腳, etc', emoji: '💪' },
       clothes: { label: '衣服', emoji: '👗' },
-      action: { label: '動作', emoji: '🏃' },
+      faceAction: { label: '臉部動作', emoji: '👀' },
+      bodyAction: { label: '身體動作', emoji: '🤸' },
       background: { label: '背景, 鏡頭角度', emoji: '🌅' },
       lora: { label: 'lora', emoji: '💿' }
     };
@@ -605,7 +606,7 @@
     // Initial state
     let state = {
       commonPrompt: {
-        quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: '', lora: ''
+        quality: '', style: '', character: '', face: '', body: '', clothes: '', faceAction: '', bodyAction: '', background: '', lora: ''
       },
       blocks: [],
       activeCompareCategory: null
@@ -619,7 +620,15 @@
           const parsed = JSON.parse(stored);
           if (validateWorkspaceSchema(parsed)) {
             state = parsed;
-            // Normalize categories to ensure new keys (like lora) exist
+            
+            // Migration: split action category into faceAction/bodyAction
+            if (state.commonPrompt.action !== undefined) {
+              state.commonPrompt.bodyAction = state.commonPrompt.action;
+              state.commonPrompt.faceAction = '';
+              delete state.commonPrompt.action;
+            }
+            
+            // Normalize categories to ensure new keys (like lora, faceAction, bodyAction) exist
             if (!state.commonPrompt.collapsedCategories) {
               state.commonPrompt.collapsedCategories = {};
             }
@@ -635,6 +644,14 @@
               if (!block.categories) {
                 block.categories = {};
               }
+              
+              // Block-level migration for action key
+              if (block.categories.action !== undefined) {
+                block.categories.bodyAction = block.categories.action;
+                block.categories.faceAction = '';
+                delete block.categories.action;
+              }
+              
               for (const key of CATEGORY_KEYS) {
                 if (block.categories[key] === undefined) {
                   block.categories[key] = '';
@@ -655,7 +672,7 @@
           isCollapsed: false,
           collapsedCategories: {},
           categories: {
-            quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: '', lora: ''
+            quality: '', style: '', character: '', face: '', body: '', clothes: '', faceAction: '', bodyAction: '', background: '', lora: ''
           }
         });
       }
@@ -702,7 +719,7 @@
         isCollapsed: false,
         collapsedCategories: {},
         categories: {
-          quality: '', style: '', character: '', face: '', body: '', clothes: '', action: '', background: '', lora: ''
+          quality: '', style: '', character: '', face: '', body: '', clothes: '', faceAction: '', bodyAction: '', background: '', lora: ''
         }
       };
       state.blocks.push(newBlock);
