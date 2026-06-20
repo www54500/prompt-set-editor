@@ -1,0 +1,665 @@
+{
+  "commonPrompt": {
+    "quality": "masterpiece, best quality, amazing quality, very aesthetic, newest,",
+    "style": "(taesi:0.7), (nyntcha:0.7), (gurimjang:0.6)",
+    "character": "1girl, solo",
+    "face": "medium hair, blonde",
+    "body": "large breasts, thick thighs",
+    "clothes": "",
+    "background": "white background, ",
+    "collapsedCategories": {
+      "face": false,
+      "quality": false,
+      "style": false,
+      "character": false,
+      "body": false,
+      "clothes": false,
+      "action": false,
+      "background": false
+    },
+    "lora": "<lora:sdxl_lightning_8step_lora:1>",
+    "bodyAction": "",
+    "faceAction": ""
+  },
+  "blocks": [
+    {
+      "id": "id-ydrg53q7z-mql94iy2",
+      "name": "正面 (有衣)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "",
+        "clothes": "white midriff, black yoga pant",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart",
+        "faceAction": "looking at viewer,"
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-l93lgovkq-mql9acar",
+      "name": "背面 (有衣)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "",
+        "clothes": "white midriff, black yoga pant",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart",
+        "faceAction": "looking back, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-z32sy0bz7-mql9id2b",
+      "name": "正面 (上空)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "puffy nipples",
+        "clothes": "topless, black yoga pant",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart",
+        "faceAction": "looking at viewer, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-q48f6c8e4-mqlc08xk",
+      "name": "正面 (上空前傾)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "puffy nipples, cleavage, ",
+        "clothes": "topless, black yoga pant",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart, leaning forward",
+        "faceAction": "looking at viewer, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-g1hhgsx9v-mqlbck5k",
+      "name": "背面 (上空)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "puffy nipples",
+        "clothes": "topless, black yoga pant",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart",
+        "faceAction": "looking back, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-lbw0eg6qt-mqldhifq",
+      "name": "背面 (上空前傾)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "puffy nipples",
+        "clothes": "topless, black yoga pant",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart, leaning forward",
+        "faceAction": "looking back, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-mmdqdtev2-mqlbheag",
+      "name": "正面 (下空)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "pussy, ",
+        "clothes": "white midriff, bottomless,",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart",
+        "faceAction": " looking at viewer, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-27syoccrp-mqletozq",
+      "name": "正面 (下空開腿)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "resolution": "1024x1024",
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "pussy, ",
+        "clothes": "white midriff, bottomless,",
+        "background": "",
+        "lora": "",
+        "bodyAction": "sitting, legs spread",
+        "faceAction": " looking at viewer, "
+      },
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-3euz3ltwh-mqlbjyyo",
+      "name": "背面 (下空)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "bare ass",
+        "clothes": "white midriff, bottomless",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart",
+        "faceAction": "looking back, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-6fmdwurjm-mqlbscq8",
+      "name": "背面 (下空前傾)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "pussy",
+        "clothes": "white midriff, bottomless",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, leaning forward, legs apart",
+        "faceAction": "looking back, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-wa17d54sf-mqleneqe",
+      "name": "背面 (下空彎腰)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "resolution": "1024x1024",
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "pussy, knees, bare feet",
+        "clothes": "white midriff, bottomless",
+        "background": "",
+        "lora": "",
+        "bodyAction": "all fours, kneeling",
+        "faceAction": "looking back, "
+      },
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-n38jefj4m-mqlf0wws",
+      "name": "背面 (下空跪姿)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "resolution": "1152x896",
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "puffy nipples, pussy, knees, bare feet, wide hips",
+        "clothes": "white midriff, bottomless",
+        "background": "",
+        "lora": "",
+        "bodyAction": "all fours, kneeling",
+        "faceAction": "looking back, "
+      },
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-dm8y2ycnh-mqlc67wq",
+      "name": "正面 (nude)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "pussy, puffy nipples",
+        "clothes": "nude",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart",
+        "faceAction": " looking at viewer, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-uhjsd92y4-mqlcpgsd",
+      "name": "正面 (nude) (前傾)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "pussy, puffy nipples, cleavage, ",
+        "clothes": "nude",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart, leaning forward",
+        "faceAction": " looking at viewer, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-hsoia6zr2-mqlc64dj",
+      "name": "背面 (nude)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "puffy nipples, pussy",
+        "clothes": "nude",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart",
+        "faceAction": "looking back, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-nmvfzne60-mqlcsd94",
+      "name": "背面 (nude) (前傾)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "puffy nipples, pussy",
+        "clothes": "nude",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart, leaning forward",
+        "faceAction": "looking back, "
+      },
+      "resolution": "832x1216",
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-or1cbzwh0-mqlem9v7",
+      "name": "背面 (nude) (彎腰)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "resolution": "1024x1024",
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "puffy nipples, pussy",
+        "clothes": "nude",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs apart, bent over",
+        "faceAction": "looking back, "
+      },
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-jepx1t5or-mqlevsfq",
+      "name": "背面 (nude) (跪姿)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "resolution": "1152x896",
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "puffy nipples, pussy, knees, bare feet",
+        "clothes": "nude",
+        "background": "",
+        "lora": "",
+        "bodyAction": "all fours, kneeling",
+        "faceAction": "looking back, "
+      },
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    }
+  ],
+  "activeCompareCategory": null,
+  "commonParams": {
+    "negativePrompt": "",
+    "steps": "",
+    "cfgScale": "",
+    "samplerName": "",
+    "seed": ""
+  },
+  "apiUrl": "http://127.0.0.1:7860"
+}
