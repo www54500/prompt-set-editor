@@ -744,10 +744,17 @@
             <span style="display: block; font-size: 0.85rem; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;">✨ 分類 Prompts：</span>
             <div id="lightbox-categories" style="display: flex; flex-direction: column; gap: 6px; background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 10px; font-size: 0.8rem; overflow-y: auto; max-height: 200px;"></div>
           </div>
+          <div id="lightbox-common-section" style="margin-top: 10px; border-top: 1px dashed #27272a; padding-top: 10px; display: none;">
+            <span style="display: block; font-size: 0.85rem; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;">🌍 Common 參數：</span>
+            <pre id="lightbox-common-params" style="margin: 0; background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 0.8rem; color: #10b981; white-space: pre-wrap; word-break: break-all;"></pre>
+            <span style="display: block; font-size: 0.85rem; font-weight: 600; color: #e2e8f0; margin-top: 10px; margin-bottom: 6px;">✨ Common Prompts：</span>
+            <div id="lightbox-common-categories" style="display: flex; flex-direction: column; gap: 6px; background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 10px; font-size: 0.8rem; overflow-y: auto; max-height: 150px;"></div>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
         <button id="lightbox-restore-btn" class="btn btn-primary"><i data-lucide="refresh-cw" style="width:16px;height:16px"></i>🔄 套用設定到此卡片</button>
+        <button id="lightbox-restore-common-btn" class="btn btn-secondary" style="display: none;"><i data-lucide="copy" style="width:16px;height:16px"></i>🌍 套用設定到 Common</button>
         <button id="lightbox-download-btn" class="btn"><i data-lucide="download" style="width:16px;height:16px"></i>💾 下載圖片</button>
         <button class="btn" onclick="closeLightbox()">關閉</button>
       </div>
@@ -1196,6 +1203,8 @@
           const snapshot = {
             categories: { ...block.categories },
             params: { ...block.params },
+            commonPrompt: { ...state.commonPrompt },
+            commonParams: { ...state.commonParams },
             resolution: block.resolution || '',
             isDraft: isDraft
           };
@@ -1291,11 +1300,50 @@
         }
       });
 
+      // Render common
+      const commonSection = document.getElementById('lightbox-common-section');
+      const commonParamsEl = document.getElementById('lightbox-common-params');
+      const commonCategoriesEl = document.getElementById('lightbox-common-categories');
+      const restoreCommonBtn = document.getElementById('lightbox-restore-common-btn');
+
+      if (snap.commonPrompt) {
+        commonSection.style.display = 'block';
+        restoreCommonBtn.style.display = 'inline-flex';
+        
+        const cParams = snap.commonParams || {};
+        const cParamsText = [
+          `Steps: ${cParams.steps || ''}`,
+          `CFG Scale: ${cParams.cfgScale || ''}`,
+          `Sampler: ${cParams.samplerName || ''}`,
+          `Seed: ${cParams.seed || ''}`,
+          `Negative Prompt: ${cParams.negativePrompt || ''}`
+        ].join('\n');
+        commonParamsEl.innerText = cParamsText;
+
+        commonCategoriesEl.innerHTML = '';
+        Object.keys(CATEGORIES).forEach(key => {
+          const cat = CATEGORIES[key];
+          const val = snap.commonPrompt[key];
+          if (val) {
+            const item = document.createElement('div');
+            item.style.marginBottom = '6px';
+            item.innerHTML = `<span style="color: var(--text-muted); font-weight:600;">${cat.emoji} ${cat.label}：</span><span style="color: #f1f5f9;">${val}</span>`;
+            commonCategoriesEl.appendChild(item);
+          }
+        });
+      } else {
+        commonSection.style.display = 'none';
+        restoreCommonBtn.style.display = 'none';
+      }
+
       // Bind action buttons
       const restoreBtn = document.getElementById('lightbox-restore-btn');
       const downloadBtn = document.getElementById('lightbox-download-btn');
       if (restoreBtn) {
         restoreBtn.onclick = () => applySnapshotToBlock(img.blockId, img.paramsSnapshot);
+      }
+      if (restoreCommonBtn) {
+        restoreCommonBtn.onclick = () => applySnapshotToCommon(img.paramsSnapshot);
       }
       if (downloadBtn) {
         downloadBtn.onclick = () => downloadImage(img.base64Data, `sd-gen-${img.blockId}-${img.timestamp}.png`);
@@ -1325,6 +1373,19 @@
       renderEditor();
       closeLightbox();
       showToast('已成功還原生成設定到卡片！');
+    }
+
+    function applySnapshotToCommon(snapshot) {
+      if (!snapshot || !snapshot.commonPrompt) {
+        alert("此歷史紀錄沒有包含 Common 設定");
+        return;
+      }
+      state.commonPrompt = JSON.parse(JSON.stringify(snapshot.commonPrompt));
+      state.commonParams = JSON.parse(JSON.stringify(snapshot.commonParams || {}));
+      saveState();
+      renderEditor();
+      closeLightbox();
+      showToast('已成功套用至 Common 設定！');
     }
 
     function downloadImage(base64Data, filename) {
