@@ -688,6 +688,23 @@
       <!-- Rendered dynamically -->
     </section>
 
+    <!-- Global Gallery -->
+    <section class="card" id="global-gallery-card" style="margin-bottom: 24px; border-color: #3b82f6;">
+      <div class="card-header" style="cursor: pointer;" onclick="toggleGlobalGallery()">
+        <h3 class="card-title" style="color: #60a5fa;"><i data-lucide="images"></i> 全域歷史圖片 (Global Gallery)</h3>
+        <div class="card-actions">
+          <button class="btn-icon-sm" id="global-gallery-toggle-icon"><i data-lucide="chevron-down"></i></button>
+        </div>
+      </div>
+      <div class="card-body" id="global-gallery-body" style="display: none; padding-top: 16px;">
+        <div class="image-gallery">
+          <div class="gallery-thumbs" id="global-gallery-thumbs" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;">
+            <div style="color: #64748b; font-size: 0.85rem;">載入中...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Prompt Cards -->
     <section class="prompt-cards-container" id="prompt-cards-root">
       <!-- Rendered dynamically -->
@@ -815,6 +832,20 @@
         };
         request.onerror = (e) => reject(e.target.error);
       });
+    }
+
+    function getAllImages() {
+      return initDB().then(db => new Promise((resolve, reject) => {
+        const transaction = db.transaction('images', 'readonly');
+        const store = transaction.objectStore('images');
+        const request = store.getAll();
+        request.onsuccess = (e) => {
+          const results = e.target.result || [];
+          results.sort((a, b) => b.timestamp - a.timestamp);
+          resolve(results.slice(0, 50));
+        };
+        request.onerror = (e) => reject(e.target.error);
+      }));
     }
 
     function getImagesForBlock(blockId) {
@@ -1210,6 +1241,7 @@
           };
           return saveImageToHistory(blockId, base64, snapshot).then(() => {
             loadAndRenderGallery(blockId);
+            loadAndRenderGlobalGallery();
             showToast('圖片生成成功！已加入歷史紀錄。');
           });
         }
@@ -1243,6 +1275,49 @@
           imgEl.style = 'width:64px; height:64px; background-size: cover; background-position: center; border-radius:4px; border:1px solid #475569; cursor:pointer; transition: transform 0.1s; position: relative;';
           imgEl.style.backgroundImage = `url(${img.base64Data})`;
           
+          if (img.paramsSnapshot && img.paramsSnapshot.isDraft) {
+            const badge = document.createElement('div');
+            badge.innerText = '草稿';
+            badge.style = 'position:absolute; bottom:2px; right:2px; background:rgba(99,102,241,0.9); color:white; font-size:10px; padding:2px 4px; border-radius:3px; line-height:1; pointer-events:none; font-weight:bold;';
+            imgEl.appendChild(badge);
+          }
+
+          imgEl.onclick = () => openLightbox(img);
+          imgEl.onmouseenter = () => { imgEl.style.transform = 'scale(1.05)'; };
+          imgEl.onmouseleave = () => { imgEl.style.transform = 'scale(1)'; };
+          thumbsContainer.appendChild(imgEl);
+        });
+      });
+    }
+
+    function toggleGlobalGallery() {
+      const body = document.getElementById('global-gallery-body');
+      const icon = document.querySelector('#global-gallery-toggle-icon i');
+      if (body.style.display === 'none') {
+        body.style.display = 'block';
+        if (icon) icon.setAttribute('data-lucide', 'chevron-up');
+      } else {
+        body.style.display = 'none';
+        if (icon) icon.setAttribute('data-lucide', 'chevron-down');
+      }
+      lucide.createIcons();
+    }
+
+    function loadAndRenderGlobalGallery() {
+      const thumbsContainer = document.getElementById('global-gallery-thumbs');
+      if (!thumbsContainer) return;
+
+      getAllImages().then(images => {
+        if (images.length === 0) {
+          thumbsContainer.innerHTML = '<div style="color: #64748b; font-size: 0.85rem;">目前沒有歷史圖片</div>';
+          return;
+        }
+        thumbsContainer.innerHTML = '';
+        images.forEach(img => {
+          const imgEl = document.createElement('div');
+          imgEl.style = 'flex-shrink: 0; width:80px; height:80px; background-size: cover; background-position: center; border-radius:4px; border:1px solid #475569; cursor:pointer; transition: transform 0.1s; position: relative;';
+          imgEl.style.backgroundImage = `url(${img.base64Data})`;
+
           if (img.paramsSnapshot && img.paramsSnapshot.isDraft) {
             const badge = document.createElement('div');
             badge.innerText = '草稿';
@@ -2184,6 +2259,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       loadState();
       renderEditor();
+      loadAndRenderGlobalGallery();
       pingAPI();
     });
   </script>
