@@ -147,16 +147,50 @@ For each block, compile a final prompt string:
 
 ---
 
-## 5. Development Plan & Verification
+## 6. A1111 API Connection & Generation Specs
 
-1. **Phase 1: Basic Structure**: Build the single `index.html` file, standard styles, state load/save mechanics.
-2. **Phase 2: Editor Card Rendering**: Render the Common Prompt card and standard prompt cards dynamically from the state. Add field editing, adding cards, cloning, and deleting.
-3. **Phase 3: Drag & Drop**: Integrate SortableJS to enable card reordering.
-4. **Phase 4: Collapsing & Compare Views**: Implement block and category level toggle buttons and the global comparison selector.
-5. **Phase 5: Import / Export / Clipboard**: Build JSON download/upload, copy block text, and batch txt compile modal.
-6. **Verification Checklist**:
-   - Verify compiler prepends common prompts properly.
-   - Verify drag-and-drop reorders elements correctly in UI and saves state.
-   - Verify LocalStorage persists changes upon input blur.
-   - Verify JSON import parses, validates, and loads workspace cleanly.
-   - Verify A1111 convert generates correct line-by-line format.
+### 6.1 Network & API endpoints
+- **API URL Configuration**: Configured via a text input in the main header (default: `http://127.0.0.1:7860`).
+- **Connection Status**: Pings `GET /sdapi/v1/sd-models` to update connection dot indicator (🟢 Online / 🔴 Offline).
+- **Generation Endpoint**: Sends `POST /sdapi/v1/txt2img` with JSON payload containing prompt, negative prompt, steps, cfg scale, sampler name, seed, width, and height.
+
+### 6.2 Generation Actions & Flow
+- **Card-level Generation**: A "🎨 產圖" button on each expanded card. Displays loading/progress state when clicked.
+- **Global Batch Generation**: A "⚡ 批次生成" button in the header that generates all active blocks sequentially.
+- **Queue Control**: Prevents concurrent requests by processing generations in a sequential queue.
+
+### 6.3 Local Image Storage (IndexedDB)
+- **Database Schema**: Stored in a database `PromptSetEditorDB` under object store `images` with keys `${blockId}_${timestamp}` containing:
+  - `blockId` (string)
+  - `timestamp` (number)
+  - `base64Data` (string, raw PNG data url)
+  - `paramsSnapshot` (object containing categories, params, and resolution at the time of generation)
+- **Automatic Pruning**:
+  - Max 10 images stored per block card.
+  - Orphaned images (where `blockId` is not present in `state.blocks`) are deleted on startup and on JSON workspace import.
+  - Card deletion triggers immediate removal of its images from IndexedDB.
+
+### 6.4 Lightbox Modal (Click to Enlarge)
+- Shows high-res image on the left.
+- Shows prompt and parameter snapshot on the right.
+- Buttons to `💾 下載圖片` (Save to file) and `🔄 套用設定到此卡片` (restores categories/params snapshot back to card).
+
+---
+
+## 7. Development Plan & Verification
+
+1. **Phase 1: Basic Structure**: Build the single `index.html` file, standard styles, state load/save mechanics (Completed).
+2. **Phase 2: Editor Card Rendering**: Render the Common Prompt card and standard prompt cards dynamically from the state. Add field editing, adding cards, cloning, and deleting (Completed).
+3. **Phase 3: Drag & Drop**: Integrate SortableJS to enable card reordering (Completed).
+4. **Phase 4: Collapsing & Compare Views**: Implement block and category level toggle buttons and the global comparison selector (Completed).
+5. **Phase 5: Import / Export / Clipboard**: Build JSON download/upload, copy block text, and batch txt compile modal (Completed).
+6. **Phase 6: A1111 API Call & Lightbox**: Implement A1111 API inputs, status pinger, txt2img calling queue, IndexedDB image manager, embedded thumbnail row, parameters snapshot restore, and lightbox modal overlay.
+7. **Verification Checklist**:
+   - Verify compiler prepends common prompts and supports `=` override prefix.
+   - Verify resolution dropdown sets size flags correctly in batch export.
+   - Verify API status indicator shows 🟢 when local A1111 is running and 🔴 when offline.
+   - Verify card generation compiles prompts/params correctly and sends POST request to `/sdapi/v1/txt2img`.
+   - Verify generated images are saved in IndexedDB and displayed inside the card.
+   - Verify clicking thumbnail launches lightbox modal showing correct parameters snapshot.
+   - Verify `🔄 套用設定` restores categories and params back to card.
+   - Verify importing workspace JSON or deleting card cleans up orphaned image records in IndexedDB.
