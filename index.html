@@ -419,6 +419,22 @@
       color: white;
     }
 
+    .spinner-icon {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     .category-textarea {
       width: 100%;
       background: transparent;
@@ -698,6 +714,40 @@
         <button class="btn" onclick="copyBatchText()"><i data-lucide="copy" style="width:16px;height:16px"></i>複製全部</button>
         <button class="btn btn-primary" onclick="downloadBatchFile()"><i data-lucide="download" style="width:16px;height:16px"></i>下載 .txt 檔案</button>
         <button class="btn" onclick="closeExportModal()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox Modal -->
+  <div class="modal-overlay" id="lightbox-modal" onclick="closeLightbox()">
+    <div class="modal-box" onclick="event.stopPropagation()" style="max-width: 900px; max-height: 85vh;">
+      <div class="modal-header">
+        <h3 class="modal-title">🖼️ 歷史生成圖片與參數快照</h3>
+        <button class="btn-icon-sm" onclick="closeLightbox()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" style="display: flex; gap: 20px; flex-wrap: wrap; overflow-y: auto;">
+        <!-- Left Column: Image Display -->
+        <div style="flex: 1 1 400px; display: flex; align-items: center; justify-content: center; background: #09090b; border-radius: 8px; overflow: hidden; border: 1px solid #27272a; min-height: 350px;">
+          <img id="lightbox-img" style="max-width: 100%; max-height: 50vh; object-fit: contain;" src="" alt="Generated Image">
+        </div>
+        <!-- Right Column: Settings and Metadata -->
+        <div style="flex: 1 1 350px; display: flex; flex-direction: column; gap: 12px; min-width: 300px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px dashed #27272a; padding-bottom: 8px;">
+            <div><span style="color: var(--text-muted);">時間：</span><span id="lightbox-time" style="color: #e2e8f0; font-weight: 500;"></span></div>
+            <div><span style="color: var(--text-muted);">解析度：</span><span id="lightbox-resolution" style="color: #e2e8f0; font-weight: 500;"></span></div>
+          </div>
+          <div>
+            <span style="display: block; font-size: 0.85rem; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;">⚙️ A1111 參數：</span>
+            <pre id="lightbox-params" style="margin: 0; background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 0.8rem; color: #10b981; white-space: pre-wrap; word-break: break-all;"></pre>
+          </div>
+          <div>
+            <span style="display: block; font-size: 0.85rem; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;">✨ 分類 Prompts：</span>
+            <div id="lightbox-categories" style="display: flex; flex-direction: column; gap: 6px; background: #09090b; border: 1px solid #27272a; border-radius: 8px; padding: 10px; font-size: 0.8rem; overflow-y: auto; max-height: 200px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeLightbox()">關閉</button>
       </div>
     </div>
   </div>
@@ -1039,8 +1089,181 @@
       if (window.triggerBlockGenerationOverride) {
         return window.triggerBlockGenerationOverride(blockId);
       }
-      // Stub for Task 2, will be fully implemented in Task 3
-      return Promise.resolve();
+      const block = state.blocks.find(b => b.id === blockId);
+      if (!block) return Promise.resolve();
+
+      const btn = document.getElementById(`btn-gen-${blockId}`);
+      const originalHTML = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="spinner-icon"></i>⏳ 生成中...`;
+      }
+
+      // Compile payload
+      const positive = compilePrompt(block, state.commonPrompt, ', ');
+      
+      // Negative Prompt
+      const blockNeg = (block.params?.negativePrompt || '').trim();
+      const commonNeg = (state.commonParams?.negativePrompt || '').trim();
+      let finalNeg = '';
+      if (blockNeg.startsWith('=')) {
+        finalNeg = blockNeg.slice(1).trim();
+      } else if (commonNeg && blockNeg) {
+        finalNeg = commonNeg + ', ' + blockNeg;
+      } else {
+        finalNeg = commonNeg || blockNeg;
+      }
+
+      // Resolving numeric/sampler options
+      const resolveParam = (bVal, cVal, defaultVal) => {
+        const bv = (bVal || '').trim();
+        const cv = (cVal || '').trim();
+        let v = '';
+        if (bv.startsWith('=')) {
+          v = bv.slice(1).trim();
+        } else {
+          v = bv || cv;
+        }
+        return v || defaultVal;
+      };
+
+      const steps = parseInt(resolveParam(block.params?.steps, state.commonParams?.steps, '20'), 10);
+      const cfg = parseFloat(resolveParam(block.params?.cfgScale, state.commonParams?.cfgScale, '7.0'));
+      const sampler = resolveParam(block.params?.samplerName, state.commonParams?.samplerName, 'Euler a');
+      const seed = parseInt(resolveParam(block.params?.seed, state.commonParams?.seed, '-1'), 10);
+
+      let width = 1024;
+      let height = 1024;
+      if (block.resolution) {
+        const [w, h] = block.resolution.split('x');
+        width = parseInt(w, 10);
+        height = parseInt(h, 10);
+      }
+
+      const payload = {
+        prompt: positive,
+        negative_prompt: finalNeg,
+        steps: steps,
+        cfg_scale: cfg,
+        sampler_name: sampler,
+        seed: seed,
+        width: width,
+        height: height,
+        batch_size: 1
+      };
+
+      const url = state.apiUrl || 'http://127.0.0.1:7860';
+      return fetch(`${url}/sdapi/v1/txt2img`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('伺服器回傳錯誤');
+        return res.json();
+      })
+      .then(data => {
+        if (data.images && data.images.length > 0) {
+          const base64 = 'data:image/png;base64,' + data.images[0];
+          
+          // Snapshot inputs
+          const snapshot = {
+            categories: { ...block.categories },
+            params: { ...block.params },
+            resolution: block.resolution || ''
+          };
+          return saveImageToHistory(blockId, base64, snapshot).then(() => {
+            loadAndRenderGallery(blockId);
+            showToast('圖片生成成功！已加入歷史紀錄。');
+          });
+        }
+      })
+      .catch(err => {
+        console.error('Generation failed:', err);
+        alert(`產圖失敗！\n1. 請確認 A1111 已啟動並開啟 API。\n2. 啟動參數需包含 --cors-allow-origins=*\n詳細錯誤：${err.message}`);
+      })
+      .finally(() => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+        }
+      });
+    }
+
+    function loadAndRenderGallery(blockId) {
+      const thumbsContainer = document.getElementById(`thumbs-${blockId}`);
+      const rowContainer = document.getElementById(`gallery-${blockId}`);
+      if (!thumbsContainer) return;
+      
+      getImagesForBlock(blockId).then(images => {
+        if (images.length === 0) {
+          rowContainer.style.display = 'none';
+          return;
+        }
+        rowContainer.style.display = 'block';
+        thumbsContainer.innerHTML = '';
+        images.forEach(img => {
+          const imgEl = document.createElement('div');
+          imgEl.style = 'width:64px; height:64px; background-size: cover; background-position: center; border-radius:4px; border:1px solid #475569; cursor:pointer; transition: transform 0.1s;';
+          imgEl.style.backgroundImage = `url(${img.base64Data})`;
+          imgEl.onclick = () => openLightbox(img);
+          imgEl.onmouseenter = () => { imgEl.style.transform = 'scale(1.05)'; };
+          imgEl.onmouseleave = () => { imgEl.style.transform = 'scale(1)'; };
+          thumbsContainer.appendChild(imgEl);
+        });
+      });
+    }
+
+    function openLightbox(img) {
+      const modal = document.getElementById('lightbox-modal');
+      const lightboxImg = document.getElementById('lightbox-img');
+      const lightboxTime = document.getElementById('lightbox-time');
+      const lightboxResolution = document.getElementById('lightbox-resolution');
+      const lightboxParams = document.getElementById('lightbox-params');
+      const lightboxCategories = document.getElementById('lightbox-categories');
+
+      if (!modal || !lightboxImg) return;
+
+      lightboxImg.src = img.base64Data;
+      lightboxTime.innerText = new Date(img.timestamp).toLocaleString();
+      
+      const snap = img.paramsSnapshot || {};
+      lightboxResolution.innerText = snap.resolution || '未指定 (預設 1024x1024)';
+
+      // Render params
+      const params = snap.params || {};
+      const paramsText = [
+        `Steps: ${params.steps || ''}`,
+        `CFG Scale: ${params.cfgScale || ''}`,
+        `Sampler: ${params.samplerName || ''}`,
+        `Seed: ${params.seed || ''}`,
+        `Negative Prompt: ${params.negativePrompt || ''}`
+      ].join('\n');
+      lightboxParams.innerText = paramsText;
+
+      // Render categories
+      const cats = snap.categories || {};
+      lightboxCategories.innerHTML = '';
+      Object.keys(CATEGORIES).forEach(key => {
+        const cat = CATEGORIES[key];
+        const val = cats[key];
+        if (val) {
+          const item = document.createElement('div');
+          item.style.marginBottom = '6px';
+          item.innerHTML = `<span style="color: var(--text-muted); font-weight:600;">${cat.emoji} ${cat.label}：</span><span style="color: #f1f5f9;">${val}</span>`;
+          lightboxCategories.appendChild(item);
+        }
+      });
+
+      modal.style.display = 'flex';
+      lucide.createIcons();
+    }
+
+    function closeLightbox() {
+      const modal = document.getElementById('lightbox-modal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
     }
 
     function compilePrompt(block, commonPrompt, separator = ', ') {
@@ -1668,6 +1891,11 @@
               ${isCardCollapsed ? `<span class="card-compiled-preview" id="preview-${block.id}">[${compiled}]</span>` : ''}
             </div>
             <div class="card-actions">
+              ${!isCardCollapsed ? `
+                <button class="btn" id="btn-gen-${block.id}" style="padding: 6px 12px; background: #10b981; color: white; border-color: #10b981;" onclick="enqueueGeneration('${block.id}')">
+                  <i data-lucide="play" style="width:14px;height:14px"></i>🎨 產圖
+                </button>
+              ` : ''}
               <button class="btn" style="padding: 6px 12px;" onclick="toggleBlockCollapsed('${block.id}')">
                 <i data-lucide="${isCardCollapsed ? 'chevron-down' : 'chevron-up'}" style="width:14px;height:14px"></i>
                 ${isCardCollapsed ? '展開卡片' : '收合卡片'}
@@ -1747,10 +1975,17 @@
                 </div>
               </div>
             </details>
+            <div class="card-gallery-row" id="gallery-${block.id}" style="margin-top: 12px; padding-top: 8px; border-top: 1px dashed rgba(255, 255, 255, 0.1); display: none;">
+              <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 6px;">🖼️ 歷史生成圖片 (點擊放大)：</div>
+              <div class="gallery-thumbs" id="thumbs-${block.id}" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+            </div>
           ` : ''}
         `;
 
         cardsRoot.appendChild(card);
+        if (!isCardCollapsed) {
+          loadAndRenderGallery(block.id);
+        }
       });
 
       // Refresh icons

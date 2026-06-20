@@ -137,7 +137,8 @@ const mockEnv = {
       }
       return mockElements[id];
     },
-    createElement: () => makeMockElement()
+    createElement: () => makeMockElement(),
+    body: makeMockElement()
   },
   window: {},
   lucide: {
@@ -677,5 +678,72 @@ test('Editor State and Collapse Operations', async (t) => {
 
     // Clean up mock override
     delete mockEnv.window.triggerBlockGenerationOverride;
+  });
+
+  await t.test('Task 3: triggerBlockGeneration payload compilation and parameter resolution', async () => {
+    const originalFetch = global.fetch;
+    let fetchedUrl = '';
+    let fetchedInit = null;
+
+    global.fetch = async (url, init) => {
+      fetchedUrl = url;
+      fetchedInit = init;
+      return {
+        ok: true,
+        json: async () => ({ images: ['base64_img_data'] })
+      };
+    };
+
+    state.apiUrl = 'http://my-custom-api:7860';
+    state.commonParams = {
+      negativePrompt: 'bad quality',
+      steps: '25',
+      cfgScale: '7.5',
+      samplerName: 'DPM++ 2M Karras',
+      seed: '123'
+    };
+
+    state.blocks = [
+      {
+        id: 'block-3-test',
+        name: 'Block #3 Test',
+        categories: {
+          quality: 'masterpiece',
+          style: 'anime'
+        },
+        params: {
+          steps: '30',
+          cfgScale: '=5.0',
+          samplerName: '',
+          seed: '456',
+          negativePrompt: 'extra bad'
+        },
+        resolution: '1216x832'
+      }
+    ];
+
+    // Mock HTML button since triggerBlockGeneration queries it
+    const genBtn = mockEnv.document.getElementById('btn-gen-block-3-test');
+    assert.ok(genBtn);
+
+    // Call triggerBlockGeneration
+    await triggerBlockGeneration('block-3-test');
+
+    assert.strictEqual(fetchedUrl, 'http://my-custom-api:7860/sdapi/v1/txt2img');
+    assert.ok(fetchedInit);
+    assert.strictEqual(fetchedInit.method, 'POST');
+    
+    const body = JSON.parse(fetchedInit.body);
+    assert.strictEqual(body.prompt, 'masterpiece, anime');
+    assert.strictEqual(body.negative_prompt, 'bad quality, extra bad');
+    assert.strictEqual(body.steps, 30);
+    assert.strictEqual(body.cfg_scale, 5.0);
+    assert.strictEqual(body.sampler_name, 'DPM++ 2M Karras');
+    assert.strictEqual(body.seed, 456);
+    assert.strictEqual(body.width, 1216);
+    assert.strictEqual(body.height, 832);
+
+    // Restore fetch
+    global.fetch = originalFetch;
   });
 });
