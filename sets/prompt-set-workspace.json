@@ -1,12 +1,12 @@
 {
   "commonPrompt": {
-    "quality": "masterpiece, best quality, amazing quality, very aesthetic, newest,",
-    "style": "(taesi:0.7), (nyntcha:0.7), (gurimjang:0.6)",
+    "quality": "masterpiece, best quality, amazing quality, very aesthetic, newest",
+    "style": "lindaroze, (revolverwing:0.5)",
     "character": "1girl, solo",
-    "face": "medium hair, blonde",
+    "face": "short hair, white hair, bob cut",
     "body": "large breasts, thick thighs",
     "clothes": "",
-    "background": "white background, ",
+    "background": "white background",
     "collapsedCategories": {
       "face": false,
       "quality": false,
@@ -15,9 +15,12 @@
       "body": false,
       "clothes": false,
       "action": false,
-      "background": false
+      "background": false,
+      "faceAction": false,
+      "bodyAction": false,
+      "lora": false
     },
-    "lora": "<lora:sdxl_lightning_8step_lora:1>",
+    "lora": "",
     "bodyAction": "",
     "faceAction": ""
   },
@@ -233,6 +236,41 @@
       }
     },
     {
+      "id": "id-a84nj0vlq-mqmpnuwv",
+      "name": "背面 (上空跪姿)",
+      "isCollapsed": true,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "resolution": "1152x896",
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "puffy nipples, kneepits, bare feet",
+        "clothes": "topless, black yoga pant",
+        "background": "",
+        "lora": "",
+        "bodyAction": "all fours",
+        "faceAction": "looking back"
+      },
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
       "id": "id-mmdqdtev2-mqlbheag",
       "name": "正面 (下空)",
       "isCollapsed": true,
@@ -251,12 +289,12 @@
         "style": "",
         "character": "",
         "face": "",
-        "body": "pussy, ",
-        "clothes": "white midriff, bottomless,",
+        "body": "pussy",
+        "clothes": "white midriff, bottomless",
         "background": "",
         "lora": "",
         "bodyAction": "standing, legs apart",
-        "faceAction": " looking at viewer, "
+        "faceAction": " looking at viewer"
       },
       "resolution": "832x1216",
       "params": {
@@ -384,9 +422,12 @@
         "body": false,
         "clothes": false,
         "action": false,
-        "background": false
+        "background": false,
+        "faceAction": false,
+        "bodyAction": false,
+        "lora": false
       },
-      "resolution": "1024x1024",
+      "resolution": "896x1152",
       "categories": {
         "quality": "",
         "style": "",
@@ -396,7 +437,7 @@
         "clothes": "white midriff, bottomless",
         "background": "",
         "lora": "",
-        "bodyAction": "all fours, kneeling",
+        "bodyAction": "standing, legs apart, bent over, hands on knees",
         "faceAction": "looking back, "
       },
       "params": {
@@ -585,7 +626,7 @@
     {
       "id": "id-or1cbzwh0-mqlem9v7",
       "name": "背面 (nude) (彎腰)",
-      "isCollapsed": true,
+      "isCollapsed": false,
       "collapsedCategories": {
         "character": false,
         "quality": false,
@@ -596,7 +637,7 @@
         "action": false,
         "background": false
       },
-      "resolution": "1024x1024",
+      "resolution": "896x1152",
       "categories": {
         "quality": "",
         "style": "",
@@ -606,8 +647,8 @@
         "clothes": "nude",
         "background": "",
         "lora": "",
-        "bodyAction": "standing, legs apart, bent over",
-        "faceAction": "looking back, "
+        "bodyAction": "standing, legs together, bent over, hands on knees",
+        "faceAction": "looking back"
       },
       "params": {
         "negativePrompt": "",
@@ -618,9 +659,9 @@
       }
     },
     {
-      "id": "id-jepx1t5or-mqlevsfq",
-      "name": "背面 (nude) (跪姿)",
-      "isCollapsed": true,
+      "id": "id-m3nzi7wwg-mqmrwlv4",
+      "name": "背面 (nude) (彎腰掰臀)",
+      "isCollapsed": false,
       "collapsedCategories": {
         "character": false,
         "quality": false,
@@ -637,7 +678,42 @@
         "style": "",
         "character": "",
         "face": "",
-        "body": "puffy nipples, pussy, knees, bare feet",
+        "body": "puffy nipples, pussy, anus, big ass",
+        "clothes": "nude",
+        "background": "",
+        "lora": "",
+        "bodyAction": "standing, legs together, bent over, grab own ass, ass spread,",
+        "faceAction": "looking back"
+      },
+      "params": {
+        "negativePrompt": "",
+        "steps": "",
+        "cfgScale": "",
+        "samplerName": "",
+        "seed": ""
+      }
+    },
+    {
+      "id": "id-jepx1t5or-mqlevsfq",
+      "name": "背面 (nude) (跪姿)",
+      "isCollapsed": false,
+      "collapsedCategories": {
+        "character": false,
+        "quality": false,
+        "style": false,
+        "face": false,
+        "body": false,
+        "clothes": false,
+        "action": false,
+        "background": false
+      },
+      "resolution": "1152x896",
+      "categories": {
+        "quality": "",
+        "style": "",
+        "character": "",
+        "face": "",
+        "body": "puffy nipples, pussy, anus, knees, bare feet",
         "clothes": "nude",
         "background": "",
         "lora": "",
@@ -655,11 +731,12 @@
   ],
   "activeCompareCategory": null,
   "commonParams": {
-    "negativePrompt": "",
-    "steps": "",
-    "cfgScale": "",
-    "samplerName": "",
-    "seed": ""
+    "negativePrompt": "bad quality, worst quality, worst detail, sketch, censored, artist name, signature, text, watermark, deformed hands, missing fingers, extra fingers, fused fingers, bad hands, bad anatomy, disfigured hands, malformed hands, broken fingers, wrong finger count,",
+    "steps": "24",
+    "cfgScale": "4",
+    "samplerName": "Euler a",
+    "seed": "-1",
+    "enableAdetailer": true
   },
-  "apiUrl": "http://127.0.0.1:7860"
+  "apiUrl": "https://lightbox-pharmaceutical-possibility-hitachi.trycloudflare.com"
 }
