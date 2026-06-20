@@ -33,7 +33,7 @@ The application compiles multiple cards (prompt blocks) prepended with a "Common
 4. **Drag-and-Drop Sorting**: Drag handles on each prompt block card to adjust their execution order.
 5. **Card Operations**: 
    - `Copy Text`: Copies the compiled prompt of that specific block, formatted with each non-empty category on its own line, separated by an empty line (`\n\n`).
-   - `Copy ADetailer`: Copies the compiled prompt of that specific block, formatted as a single line, containing only `quality`, `style`, `face`, `faceAction`, `bodyAction`, and `lora` categories.
+   - `Copy ADetailer`: Copies the compiled prompt of that specific block, formatted as a single line, containing only `quality`, `style`, `face`, `faceAction`, and `lora` categories.
    - `Clone`: Duplicates the card block.
    - `Delete`: Deletes the card block.
 6. **Workspace Export/Import**: Download/upload the entire state (JSON) to save work.

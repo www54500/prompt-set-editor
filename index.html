@@ -1580,7 +1580,7 @@
 
     // Compile ADetailer (Face Detailer) format
     function compileADetailerPrompt(block, isDraft = false) {
-      const keys = ['quality', 'style', 'face', 'faceAction', 'bodyAction', 'lora'];
+      const keys = ['quality', 'style', 'face', 'faceAction', 'lora'];
       const parts = [];
       for (const key of keys) {
         const commonVal = stripComments((state.commonPrompt[key] || '').trim());
