@@ -48,6 +48,7 @@ The application compiles multiple cards (prompt blocks) prepended with a "Common
    - Global and card-level A1111 parameter blocks (Negative Prompt, Steps, CFG Scale, Sampler, Seed). Card-level parameters are folded inside an accordion details view.
    - **Global ADetailer Toggle**: A global setting to enable/disable ADetailer face fixing for all generation requests.
    - **Prefix `=` Overrides**: If a positive prompt category or negative prompt starts with `=`, it completely overwrites the global counterpart rather than merging. For numerical/name parameters, adding `=` as the entire value blocks inheritance (hides the flag).
+10. **Prompt Comments**: Supports C-style inline (`/* ... */`) and line (`//`) comments within any prompt text box. Comments are automatically stripped during compilation before being sent to the A1111 API or copied to the clipboard.
 
 ---
 
