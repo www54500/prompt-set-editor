@@ -180,6 +180,12 @@ const runCode = new Function('env', `
     loadState,
     deleteBlock,
     importWorkspace,
+    pingAPI,
+    enqueueGeneration,
+    generateAllActiveBlocks,
+    updateApiUrl,
+    processQueue,
+    triggerBlockGeneration,
     state
   };
 `);
@@ -213,6 +219,12 @@ test('Editor State and Collapse Operations', async (t) => {
     loadState,
     deleteBlock,
     importWorkspace,
+    pingAPI,
+    enqueueGeneration,
+    generateAllActiveBlocks,
+    updateApiUrl,
+    processQueue,
+    triggerBlockGeneration,
     state
   } = exports;
 
@@ -579,5 +591,91 @@ test('Editor State and Collapse Operations', async (t) => {
     
     const orphanImport = await getImagesForBlock('block-orphan-import');
     assert.strictEqual(orphanImport.length, 0);
+  });
+
+  await t.test('Task 2: API Connection Config & Batch Queue UI tests', async (st) => {
+    // Save original fetch
+    const originalFetch = global.fetch;
+    
+    // 1. Verify updateApiUrl updates state and saves to localStorage
+    mockEnv.localStorage.store = {};
+    let fetchUrl = '';
+    let fetchInit = null;
+    global.fetch = async (url, init) => {
+      fetchUrl = url;
+      fetchInit = init;
+      return { ok: true };
+    };
+
+    updateApiUrl('http://192.168.1.100:7860');
+    assert.strictEqual(state.apiUrl, 'http://192.168.1.100:7860');
+    assert.ok(mockEnv.localStorage.getItem('prompt_set_editor_state').includes('http://192.168.1.100:7860'));
+
+    // 2. Verify pingAPI updates DOM element state (online case)
+    const dot = mockEnv.document.getElementById('api-conn-dot');
+    assert.ok(dot);
+    await pingAPI();
+    assert.strictEqual(fetchUrl, 'http://192.168.1.100:7860/sdapi/v1/sd-models');
+    assert.strictEqual(dot.className, 'api-status-dot online');
+    assert.strictEqual(dot.title, '已連線到 A1111');
+
+    // Verify pingAPI updates DOM element state (offline/error case)
+    global.fetch = async () => {
+      return { ok: false };
+    };
+    await pingAPI();
+    assert.strictEqual(dot.className, 'api-status-dot');
+    assert.strictEqual(dot.title, '連線異常');
+
+    // Verify pingAPI updates DOM element state (fetch rejection case)
+    global.fetch = async () => {
+      throw new Error('Network error');
+    };
+    await pingAPI();
+    assert.strictEqual(dot.className, 'api-status-dot');
+    assert.strictEqual(dot.title, '未連線 (離線)');
+
+    // Restore fetch
+    global.fetch = originalFetch;
+
+    // 3. Verify Batch Queue sequential execution
+    state.blocks = [
+      { id: 'b-1', name: 'Block 1', categories: {}, params: {} },
+      { id: 'b-2', name: 'Block 2', categories: {}, params: {} },
+      { id: 'b-3', name: 'Block 3', categories: {}, params: {} }
+    ];
+
+    const order = [];
+    const delays = { 'b-1': 15, 'b-2': 8, 'b-3': 2 };
+
+    mockEnv.window.triggerBlockGenerationOverride = (blockId) => {
+      order.push({ event: 'start', id: blockId });
+      return new Promise(resolve => {
+        setTimeout(() => {
+          order.push({ event: 'end', id: blockId });
+          resolve();
+        }, delays[blockId]);
+      });
+    };
+
+    // Trigger batch generation
+    generateAllActiveBlocks();
+
+    // Wait for all queue items to finish
+    await new Promise(resolve => setTimeout(resolve, 80));
+
+    // Verify sequential execution: start -> end -> start -> end...
+    const expectedOrder = [
+      { event: 'start', id: 'b-1' },
+      { event: 'end', id: 'b-1' },
+      { event: 'start', id: 'b-2' },
+      { event: 'end', id: 'b-2' },
+      { event: 'start', id: 'b-3' },
+      { event: 'end', id: 'b-3' }
+    ];
+    assert.deepStrictEqual(order, expectedOrder);
+
+    // Clean up mock override
+    delete mockEnv.window.triggerBlockGenerationOverride;
   });
 });

@@ -109,6 +109,20 @@
       gap: 10px;
     }
 
+    .api-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      display: inline-block;
+      margin-left: 6px;
+      transition: background 0.2s;
+    }
+    .api-status-dot.online {
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+    }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -620,6 +634,12 @@
       <div class="logo-text">Prompt Set Editor</div>
     </div>
     <div class="header-actions">
+      <div style="display: flex; align-items: center; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 4px 10px; margin-right: 12px;">
+        <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">🌐 A1111 API:</span>
+        <input type="text" id="api-url-input" style="background: transparent; border: none; outline: none; color: #fff; font-size: 0.8rem; margin-left: 6px; width: 160px;" placeholder="http://127.0.0.1:7860" value="http://127.0.0.1:7860" onchange="updateApiUrl(this.value)">
+        <span class="api-status-dot" id="api-conn-dot" title="連線狀態"></span>
+      </div>
+      <button class="btn btn-primary" onclick="generateAllActiveBlocks()"><i data-lucide="zap" style="width:16px;height:16px"></i>⚡ 批次生成</button>
       <button class="btn" onclick="triggerImport()"><i data-lucide="upload" style="width:16px;height:16px"></i>匯入 JSON</button>
       <button class="btn" onclick="exportWorkspace()"><i data-lucide="download" style="width:16px;height:16px"></i>匯出 JSON</button>
       <button class="btn btn-primary" onclick="openExportModal()"><i data-lucide="file-text" style="width:16px;height:16px"></i>A1111 批次匯出 (Convert)</button>
@@ -700,6 +720,7 @@
 
     // Initial state
     let state = {
+      apiUrl: 'http://127.0.0.1:7860',
       commonPrompt: {
         quality: '', style: '', character: '', face: '', body: '', clothes: '', faceAction: '', bodyAction: '', background: '', lora: ''
       },
@@ -840,6 +861,11 @@
             }
             Object.assign(state, parsed);
             
+            // Migration: load state.apiUrl or use default
+            if (state.apiUrl === undefined) {
+              state.apiUrl = 'http://127.0.0.1:7860';
+            }
+            
             // Migration: split action category into faceAction/bodyAction
             if (state.commonPrompt.action !== undefined) {
               state.commonPrompt.bodyAction = state.commonPrompt.action;
@@ -940,6 +966,12 @@
         });
       }
       cleanOrphanedImages().catch(e => console.error('Pruning failed:', e));
+      
+      // Update DOM with loaded API URL
+      const apiInput = document.getElementById('api-url-input');
+      if (apiInput) {
+        apiInput.value = state.apiUrl || 'http://127.0.0.1:7860';
+      }
     }
 
     function saveState() {
@@ -948,6 +980,67 @@
 
     function generateId() {
       return 'id-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+    }
+
+    function updateApiUrl(val) {
+      state.apiUrl = val.trim();
+      saveState();
+      pingAPI();
+    }
+
+    function pingAPI() {
+      const url = state.apiUrl || 'http://127.0.0.1:7860';
+      const dot = document.getElementById('api-conn-dot');
+      if (!dot) return Promise.resolve(); // Safe fallback for mocked test environment
+      return fetch(`${url}/sdapi/v1/sd-models`, { method: 'GET' })
+        .then(res => {
+          if (res.ok) {
+            dot.className = 'api-status-dot online';
+            dot.title = '已連線到 A1111';
+          } else {
+            dot.className = 'api-status-dot';
+            dot.title = '連線異常';
+          }
+        })
+        .catch(() => {
+          dot.className = 'api-status-dot';
+          dot.title = '未連線 (離線)';
+        });
+    }
+
+    let generationQueue = [];
+    let isGenerating = false;
+
+    function generateAllActiveBlocks() {
+      if (state.blocks.length === 0) return;
+      state.blocks.forEach(b => {
+        enqueueGeneration(b.id);
+      });
+    }
+
+    function enqueueGeneration(blockId) {
+      if (generationQueue.includes(blockId)) return;
+      generationQueue.push(blockId);
+      processQueue();
+    }
+
+    function processQueue() {
+      if (isGenerating || generationQueue.length === 0) return;
+      isGenerating = true;
+      const nextBlockId = generationQueue.shift();
+      triggerBlockGeneration(nextBlockId)
+        .finally(() => {
+          isGenerating = false;
+          processQueue();
+        });
+    }
+
+    function triggerBlockGeneration(blockId) {
+      if (window.triggerBlockGenerationOverride) {
+        return window.triggerBlockGenerationOverride(blockId);
+      }
+      // Stub for Task 2, will be fully implemented in Task 3
+      return Promise.resolve();
     }
 
     function compilePrompt(block, commonPrompt, separator = ', ') {
@@ -1341,6 +1434,17 @@
               delete state[key];
             }
             Object.assign(state, parsed);
+            
+            // Ensure apiUrl is migrated after import
+            if (state.apiUrl === undefined) {
+              state.apiUrl = 'http://127.0.0.1:7860';
+            }
+            const apiInput = document.getElementById('api-url-input');
+            if (apiInput) {
+              apiInput.value = state.apiUrl;
+            }
+            pingAPI();
+
             saveState();
             renderEditor();
             cleanOrphanedImages().catch(e => console.error('Pruning failed:', e));
@@ -1683,6 +1787,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       loadState();
       renderEditor();
+      pingAPI();
     });
   </script>
 </body>
