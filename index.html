@@ -1164,6 +1164,20 @@
         batch_size: 1
       };
 
+      if (state.commonParams?.enableAdetailer !== false) {
+        const adPrompt = compileADetailerPrompt(block, isDraft);
+        payload.alwayson_scripts = {
+          ADetailer: {
+            args: [
+              {
+                ad_model: "face_yolov8n.pt",
+                ad_prompt: adPrompt
+              }
+            ]
+          }
+        };
+      }
+
       const url = state.apiUrl || 'http://127.0.0.1:7860';
       return fetch(`${url}/sdapi/v1/txt2img`, {
         method: 'POST',
@@ -1559,26 +1573,37 @@
       }
     }
 
+    // Compile ADetailer (Face Detailer) format
+    function compileADetailerPrompt(block, isDraft = false) {
+      const keys = ['quality', 'style', 'face', 'faceAction', 'bodyAction', 'lora'];
+      const parts = [];
+      for (const key of keys) {
+        const commonVal = (state.commonPrompt[key] || '').trim();
+        const blockVal = (block.categories[key] || '').trim();
+        let merged = '';
+        if (blockVal.startsWith('=')) {
+          merged = blockVal.slice(1).trim();
+        } else if (commonVal && blockVal) {
+          merged = commonVal + ', ' + blockVal;
+        } else {
+          merged = commonVal || blockVal;
+        }
+        if (merged) {
+          parts.push(merged);
+        }
+      }
+      let text = parts.join(', ');
+      if (isDraft) {
+        text += ', <lora:sdxl_lightning_8step_lora:1>';
+      }
+      return text;
+    }
+
     // Copy ADetailer (Face Detailer) format
     function copyBlockADetailerText(id) {
       const block = state.blocks.find(b => b.id === id);
       if (block) {
-        const keys = ['quality', 'style', 'face', 'faceAction', 'bodyAction', 'lora'];
-        const parts = [];
-        for (const key of keys) {
-          const commonVal = (state.commonPrompt[key] || '').trim();
-          const blockVal = (block.categories[key] || '').trim();
-          let merged = '';
-          if (commonVal && blockVal) {
-            merged = commonVal + ', ' + blockVal;
-          } else {
-            merged = commonVal || blockVal;
-          }
-          if (merged) {
-            parts.push(merged);
-          }
-        }
-        const text = parts.join(', ');
+        const text = compileADetailerPrompt(block);
         navigator.clipboard.writeText(text)
           .then(() => showToast('已成功複製 Face Detailer Prompt 到剪貼簿！'))
           .catch(e => console.error('Copy failed:', e));
@@ -1877,6 +1902,18 @@
                 oninput="updateCommonParam('seed', this.value)"
               >
               <span class="param-hint">隨機種子</span>
+            </div>
+            <div class="param-box">
+              <label class="param-label" title="啟用 ADetailer 修臉">✨ ADetailer</label>
+              <div style="display: flex; align-items: center; height: 32px;">
+                <input type="checkbox" id="enable-adetailer"
+                  ${state.commonParams?.enableAdetailer !== false ? 'checked' : ''}
+                  onchange="updateCommonParam('enableAdetailer', this.checked)"
+                  style="width: 18px; height: 18px; cursor: pointer;"
+                >
+                <label for="enable-adetailer" style="margin-left: 8px; font-size: 14px; cursor: pointer;">啟用修臉</label>
+              </div>
+              <span class="param-hint">自動偵測修復臉部</span>
             </div>
           </div>
         </div>
