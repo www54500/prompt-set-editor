@@ -46,6 +46,7 @@ The application compiles multiple cards (prompt blocks) prepended with a "Common
 9. **A1111 Parameters & Resolution Controls**:
    - Each card has a Resolution selector dropdown (e.g. `w1024 x h1024`, `w1344 x h768`) to set custom sizes for batch export.
    - Global and card-level A1111 parameter blocks (Negative Prompt, Steps, CFG Scale, Sampler, Seed). Card-level parameters are folded inside an accordion details view.
+   - **Global ADetailer Toggle**: A global setting to enable/disable ADetailer face fixing for all generation requests.
    - **Prefix `=` Overrides**: If a positive prompt category or negative prompt starts with `=`, it completely overwrites the global counterpart rather than merging. For numerical/name parameters, adding `=` as the entire value blocks inheritance (hides the flag).
 
 ---
@@ -76,7 +77,8 @@ let state = {
     steps: "",
     cfgScale: "",
     samplerName: "",
-    seed: ""
+    seed: "",
+    enableAdetailer: true
   },
   blocks: [
     {
@@ -152,11 +154,11 @@ For each block, compile a final prompt string:
 ### 6.1 Network & API endpoints
 - **API URL Configuration**: Configured via a text input in the main header (default: `http://127.0.0.1:7860`).
 - **Connection Status**: Pings `GET /sdapi/v1/sd-models` to update connection dot indicator (🟢 Online / 🔴 Offline).
-- **Generation Endpoint**: Sends `POST /sdapi/v1/txt2img` with JSON payload containing prompt, negative prompt, steps, cfg scale, sampler name, seed, width, and height.
+- **Generation Endpoint**: Sends `POST /sdapi/v1/txt2img` with JSON payload containing prompt, negative prompt, steps, cfg scale, sampler name, seed, width, and height. If `enableAdetailer` is true, it also appends an `alwayson_scripts` payload using the Minimum configuration and `face_yolov8n.pt` model, populated with the block's Face Detailer prompt.
 
 ### 6.2 Generation Actions & Flow
 - **Card-level Generation**: A "🎨 產圖" button on each expanded card. Displays loading/progress state when clicked.
-- **Draft Generation**: A "🖍️ 草稿" button on each expanded card. Injects `<lora:sdxl_lightning_8step_lora:1>` into the prompt and overrides parameters with `steps = 8` and `cfg_scale = 1` for rapid testing.
+- **Draft Generation**: A "🖍️ 草稿" button on each expanded card. Injects `<lora:sdxl_lightning_8step_lora:1>` into the prompt (and ADetailer prompt) and overrides parameters with `steps = 8` and `cfg_scale = 1` for rapid testing.
 - **Global Batch Generation**: A "⚡ 批次生成" button in the header that generates all active blocks sequentially.
 - **Queue Control**: Prevents concurrent requests by processing generations in a sequential queue.
 
