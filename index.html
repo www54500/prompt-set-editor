@@ -714,6 +714,120 @@
       activeCompareCategory: null
     };
 
+    // IndexedDB Database Manager
+    let dbInstance = null;
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        if (dbInstance) return resolve(dbInstance);
+        if (typeof indexedDB === 'undefined') {
+          return reject(new Error('IndexedDB is not supported'));
+        }
+        const request = indexedDB.open('PromptSetEditorDB', 1);
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('images')) {
+            db.createObjectStore('images', { keyPath: 'id' });
+          }
+        };
+        request.onsuccess = (e) => {
+          dbInstance = e.target.result;
+          resolve(dbInstance);
+        };
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    function getImagesForBlock(blockId) {
+      return initDB().then(db => new Promise((resolve, reject) => {
+        const transaction = db.transaction('images', 'readonly');
+        const store = transaction.objectStore('images');
+        const cursorRequest = store.openCursor();
+        const results = [];
+        cursorRequest.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (cursor) {
+            if (cursor.value.blockId === blockId) {
+              results.push(cursor.value);
+            }
+            cursor.continue();
+          } else {
+            results.sort((a, b) => a.timestamp - b.timestamp);
+            resolve(results);
+          }
+        };
+        cursorRequest.onerror = (e) => reject(e.target.error);
+      }));
+    }
+
+    function saveImageToHistory(blockId, base64Data, paramsSnapshot) {
+      return initDB().then(db => new Promise((resolve, reject) => {
+        const transaction = db.transaction('images', 'readwrite');
+        const store = transaction.objectStore('images');
+        const timestamp = Date.now();
+        const id = `${blockId}_${timestamp}`;
+        store.put({ id, blockId, timestamp, base64Data, paramsSnapshot });
+        transaction.oncomplete = () => {
+          getImagesForBlock(blockId).then(images => {
+            if (images.length > 10) {
+              const db2 = dbInstance;
+              const tx2 = db2.transaction('images', 'readwrite');
+              const store2 = tx2.objectStore('images');
+              const deleteCount = images.length - 10;
+              for (let i = 0; i < deleteCount; i++) {
+                store2.delete(images[i].id);
+              }
+              tx2.oncomplete = () => resolve();
+              tx2.onerror = (e) => reject(e.target.error);
+            } else {
+              resolve();
+            }
+          }).catch(reject);
+        };
+        transaction.onerror = (e) => reject(e.target.error);
+      }));
+    }
+
+    function deleteImagesForBlock(blockId) {
+      return initDB().then(db => new Promise((resolve, reject) => {
+        const transaction = db.transaction('images', 'readwrite');
+        const store = transaction.objectStore('images');
+        const cursorRequest = store.openCursor();
+        cursorRequest.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (cursor) {
+            if (cursor.value.blockId === blockId) {
+              store.delete(cursor.key);
+            }
+            cursor.continue();
+          } else {
+            resolve();
+          }
+        };
+        cursorRequest.onerror = (e) => reject(e.target.error);
+      }));
+    }
+
+    function cleanOrphanedImages() {
+      return initDB().then(db => new Promise((resolve, reject) => {
+        const transaction = db.transaction('images', 'readwrite');
+        const store = transaction.objectStore('images');
+        const cursorRequest = store.openCursor();
+        const validBlockIds = new Set(state.blocks.map(b => b.id));
+        cursorRequest.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (cursor) {
+            if (!validBlockIds.has(cursor.value.blockId)) {
+              store.delete(cursor.key);
+            }
+            cursor.continue();
+          } else {
+            resolve();
+          }
+        };
+        cursorRequest.onerror = (e) => reject(e.target.error);
+      }));
+    }
+
     // Load state from localStorage on startup
     function loadState() {
       try {
@@ -721,7 +835,10 @@
         if (stored) {
           const parsed = JSON.parse(stored);
           if (validateWorkspaceSchema(parsed)) {
-            state = parsed;
+            for (const key in state) {
+              delete state[key];
+            }
+            Object.assign(state, parsed);
             
             // Migration: split action category into faceAction/bodyAction
             if (state.commonPrompt.action !== undefined) {
@@ -822,6 +939,7 @@
           }
         });
       }
+      cleanOrphanedImages().catch(e => console.error('Pruning failed:', e));
     }
 
     function saveState() {
@@ -919,6 +1037,7 @@
       state.blocks = state.blocks.filter(b => b.id !== id);
       saveState();
       renderEditor();
+      deleteImagesForBlock(id).catch(e => console.error('Deletion failed:', e));
     }
 
     function updateCommonField(key, value) {
@@ -1218,9 +1337,13 @@
         try {
           const parsed = JSON.parse(e.target.result);
           if (validateWorkspaceSchema(parsed)) {
-            state = parsed;
+            for (const key in state) {
+              delete state[key];
+            }
+            Object.assign(state, parsed);
             saveState();
             renderEditor();
+            cleanOrphanedImages().catch(e => console.error('Pruning failed:', e));
             alert('工作區匯入成功！');
           } else {
             alert('無效的工作區檔案結構！');

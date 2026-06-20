@@ -3,6 +3,9 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 
+global.alert = () => {};
+global.confirm = () => true;
+
 // Read index.html and evaluate JS script tag content
 const htmlPath = path.join(__dirname, '../index.html');
 let jsContent = '';
@@ -25,6 +28,99 @@ const makeMockElement = () => ({
 });
 
 const mockElements = {};
+
+const mockIndexedDB = {
+  open(name, version) {
+    const request = {
+      onsuccess: null,
+      onerror: null,
+      onupgradeneeded: null,
+    };
+    
+    setTimeout(() => {
+      const db = {
+        objectStoreNames: {
+          contains(storeName) {
+            return mockIndexedDB._stores.has(storeName);
+          }
+        },
+        createObjectStore(storeName, options) {
+          mockIndexedDB._stores.add(storeName);
+          return {};
+        },
+        transaction(storeNames, mode) {
+          const tx = {
+            objectStore(storeName) {
+              return {
+                put(item) {
+                  mockIndexedDB._data.set(item.id, { ...item });
+                  return { onsuccess: null, onerror: null };
+                },
+                delete(key) {
+                  mockIndexedDB._data.delete(key);
+                  return { onsuccess: null, onerror: null };
+                },
+                openCursor() {
+                  const cursorRequest = {
+                    onsuccess: null,
+                    onerror: null
+                  };
+                  const items = Array.from(mockIndexedDB._data.values());
+                  let index = 0;
+                  function iterate() {
+                    if (index < items.length) {
+                      const item = items[index];
+                      const cursor = {
+                        value: item,
+                        key: item.id,
+                        continue() {
+                          index++;
+                          setTimeout(iterate, 0);
+                        }
+                      };
+                      if (cursorRequest.onsuccess) {
+                        cursorRequest.onsuccess({ target: { result: cursor } });
+                      }
+                    } else {
+                      if (cursorRequest.onsuccess) {
+                        cursorRequest.onsuccess({ target: { result: null } });
+                      }
+                    }
+                  }
+                  setTimeout(iterate, 0);
+                  return cursorRequest;
+                }
+              };
+            },
+            oncomplete: null,
+            onerror: null
+          };
+          setTimeout(() => {
+            if (tx.oncomplete) {
+              tx.oncomplete();
+            }
+          }, 0);
+          return tx;
+        }
+      };
+      
+      if (request.onupgradeneeded) {
+        request.onupgradeneeded({ target: { result: db } });
+      }
+      if (request.onsuccess) {
+        request.onsuccess({ target: { result: db } });
+      }
+    }, 0);
+    
+    return request;
+  },
+  _stores: new Set(),
+  _data: new Map(),
+  _reset() {
+    this._stores.clear();
+    this._data.clear();
+  }
+};
 
 // Create mocked environment to extract functions and prevent DOM crashes
 const mockEnv = {
@@ -51,7 +147,8 @@ const mockEnv = {
     clipboard: {
       writeText: () => Promise.resolve()
     }
-  }
+  },
+  indexedDB: mockIndexedDB
 };
 
 const runCode = new Function('env', `
@@ -60,6 +157,7 @@ const runCode = new Function('env', `
   const window = env.window;
   const lucide = env.lucide;
   const navigator = env.navigator;
+  const indexedDB = env.indexedDB;
   ${jsContent}
   return { 
     compilePrompt, 
@@ -74,6 +172,14 @@ const runCode = new Function('env', `
     openExportModal,
     updateCommonParam,
     updateBlockParam,
+    initDB,
+    getImagesForBlock,
+    saveImageToHistory,
+    deleteImagesForBlock,
+    cleanOrphanedImages,
+    loadState,
+    deleteBlock,
+    importWorkspace,
     state
   };
 `);
@@ -99,6 +205,14 @@ test('Editor State and Collapse Operations', async (t) => {
     openExportModal,
     updateCommonParam,
     updateBlockParam,
+    initDB,
+    getImagesForBlock,
+    saveImageToHistory,
+    deleteImagesForBlock,
+    cleanOrphanedImages,
+    loadState,
+    deleteBlock,
+    importWorkspace,
     state
   } = exports;
 
@@ -305,5 +419,165 @@ test('Editor State and Collapse Operations', async (t) => {
     assert.strictEqual(lines[1].includes('--cfg_scale 9'), true);
     assert.strictEqual(lines[1].includes('--sampler_name "DPM++ 2M Karras"'), true);
     assert.strictEqual(lines[1].includes('--seed 12345'), true);
+  });
+
+  await t.test('IndexedDB Database Manager and active-block validation cleanup tests', async (st) => {
+    // Reset mockIndexedDB before starting tests
+    mockIndexedDB._reset();
+
+    // 1. Verify initDB resolves to the database instance
+    const db = await initDB();
+    assert.ok(db);
+    assert.strictEqual(mockIndexedDB._stores.has('images'), true);
+
+    // 2. Verify saveImageToHistory and getImagesForBlock
+    await saveImageToHistory('block-1', 'base64_data_1', { steps: 20 });
+    await saveImageToHistory('block-1', 'base64_data_2', { steps: 30 });
+    
+    let images = await getImagesForBlock('block-1');
+    assert.strictEqual(images.length, 2);
+    assert.strictEqual(images[0].base64Data, 'base64_data_1');
+    assert.strictEqual(images[1].base64Data, 'base64_data_2');
+    // Verify sorting (a.timestamp - b.timestamp)
+    assert.ok(images[0].timestamp <= images[1].timestamp);
+
+    // 3. Verify history pruning (max 10)
+    mockIndexedDB._reset();
+    // Reinitialize DB
+    await initDB();
+    for (let i = 1; i <= 12; i++) {
+      await saveImageToHistory('block-1', `base64_${i}`, { index: i });
+      await new Promise(r => setTimeout(r, 2));
+    }
+    
+    // Wait for the asynchronous deletion in transaction.oncomplete to finish
+    await new Promise(r => setTimeout(r, 50));
+
+    images = await getImagesForBlock('block-1');
+    assert.strictEqual(images.length, 10);
+    // Pruning should delete the oldest ones, so we expect base64_3 through base64_12
+    assert.strictEqual(images[0].base64Data, 'base64_3');
+    assert.strictEqual(images[9].base64Data, 'base64_12');
+
+    // 4. Verify deleteImagesForBlock
+    await deleteImagesForBlock('block-1');
+    images = await getImagesForBlock('block-1');
+    assert.strictEqual(images.length, 0);
+
+    // 5. Verify cleanOrphanedImages
+    mockIndexedDB._reset();
+    await initDB();
+    
+    // Ensure state.blocks matches our expectations
+    assert.strictEqual(state.blocks.some(b => b.id === 'block-1'), true);
+    assert.strictEqual(state.blocks.some(b => b.id === 'block-orphan'), false);
+
+    await saveImageToHistory('block-1', 'valid_data', {});
+    await saveImageToHistory('block-orphan', 'orphan_data', {});
+
+    // Prune orphaned
+    await cleanOrphanedImages();
+
+    // Verify block-1 still exists, block-orphan deleted
+    const validImages = await getImagesForBlock('block-1');
+    assert.strictEqual(validImages.length, 1);
+    assert.strictEqual(validImages[0].base64Data, 'valid_data');
+
+    const orphanImages = await getImagesForBlock('block-orphan');
+    assert.strictEqual(orphanImages.length, 0);
+
+    // 6. Verify loadState integration cleanup trigger
+    mockIndexedDB._reset();
+    await initDB();
+    await saveImageToHistory('block-1', 'valid_data_ls', {});
+    await saveImageToHistory('block-orphan-ls', 'orphan_data_ls', {});
+    
+    // Set localStorage state to only have block-1
+    mockEnv.localStorage.setItem('prompt_set_editor_state', JSON.stringify({
+      commonPrompt: { quality: '' },
+      commonParams: {},
+      blocks: [{ id: 'block-1', name: 'Block #1', categories: {}, params: {} }]
+    }));
+    
+    loadState();
+    
+    // Allow cleanOrphanedImages promise to resolve
+    await new Promise(r => setTimeout(r, 50));
+    
+    const validLS = await getImagesForBlock('block-1');
+    assert.strictEqual(validLS.length, 1);
+    assert.strictEqual(validLS[0].base64Data, 'valid_data_ls');
+    
+    const orphanLS = await getImagesForBlock('block-orphan-ls');
+    assert.strictEqual(orphanLS.length, 0);
+
+    // 7. Verify deleteBlock integration cleanup trigger
+    mockIndexedDB._reset();
+    await initDB();
+    await saveImageToHistory('block-1', 'block-1-data', {});
+    await saveImageToHistory('block-2', 'block-2-data', {});
+    
+    // Call deleteBlock for block-2.
+    // Ensure state.blocks has block-2 first.
+    state.blocks = [
+      { id: 'block-1', name: 'Block #1', isCollapsed: false, collapsedCategories: {}, categories: {}, params: {} },
+      { id: 'block-2', name: 'Block #2', isCollapsed: false, collapsedCategories: {}, categories: {}, params: {} }
+    ];
+    deleteBlock('block-2');
+    
+    // Allow deleteImagesForBlock promise to resolve
+    await new Promise(r => setTimeout(r, 50));
+    
+    const block1Data = await getImagesForBlock('block-1');
+    assert.strictEqual(block1Data.length, 1);
+    assert.strictEqual(block1Data[0].base64Data, 'block-1-data');
+    
+    const block2Data = await getImagesForBlock('block-2');
+    assert.strictEqual(block2Data.length, 0);
+
+    // 8. Verify importWorkspace integration cleanup trigger
+    mockIndexedDB._reset();
+    await initDB();
+    await saveImageToHistory('block-1', 'valid_data_import', {});
+    await saveImageToHistory('block-orphan-import', 'orphan_data_import', {});
+    
+    const mockFile = {};
+    const originalFileReader = global.FileReader;
+    
+    global.FileReader = class {
+      readAsText(file) {
+        setTimeout(() => {
+          if (this.onload) {
+            this.onload({
+              target: {
+                result: JSON.stringify({
+                  commonPrompt: { quality: '' },
+                  commonParams: {},
+                  blocks: [{ id: 'block-1', name: 'Block #1', isCollapsed: false, collapsedCategories: {}, categories: {}, params: {} }]
+                })
+              }
+            });
+          }
+        }, 0);
+      }
+    };
+    
+    importWorkspace({ target: { files: [mockFile], value: '' } });
+    
+    // Allow importWorkspace and cleanOrphanedImages promise to resolve
+    await new Promise(r => setTimeout(r, 50));
+    
+    if (originalFileReader) {
+      global.FileReader = originalFileReader;
+    } else {
+      delete global.FileReader;
+    }
+    
+    const validImport = await getImagesForBlock('block-1');
+    assert.strictEqual(validImport.length, 1);
+    assert.strictEqual(validImport[0].base64Data, 'valid_data_import');
+    
+    const orphanImport = await getImagesForBlock('block-orphan-import');
+    assert.strictEqual(orphanImport.length, 0);
   });
 });
