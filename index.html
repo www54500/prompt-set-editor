@@ -747,6 +747,8 @@
         </div>
       </div>
       <div class="modal-footer">
+        <button id="lightbox-restore-btn" class="btn btn-primary"><i data-lucide="refresh-cw" style="width:16px;height:16px"></i>🔄 套用設定到此卡片</button>
+        <button id="lightbox-download-btn" class="btn"><i data-lucide="download" style="width:16px;height:16px"></i>💾 下載圖片</button>
         <button class="btn" onclick="closeLightbox()">關閉</button>
       </div>
     </div>
@@ -1255,6 +1257,16 @@
         }
       });
 
+      // Bind action buttons
+      const restoreBtn = document.getElementById('lightbox-restore-btn');
+      const downloadBtn = document.getElementById('lightbox-download-btn');
+      if (restoreBtn) {
+        restoreBtn.onclick = () => applySnapshotToBlock(img.blockId, img.paramsSnapshot);
+      }
+      if (downloadBtn) {
+        downloadBtn.onclick = () => downloadImage(img.base64Data, `sd-gen-${img.blockId}-${img.timestamp}.png`);
+      }
+
       modal.style.display = 'flex';
       lucide.createIcons();
     }
@@ -1264,6 +1276,30 @@
       if (modal) {
         modal.style.display = 'none';
       }
+    }
+
+    function applySnapshotToBlock(blockId, snapshot) {
+      if (!snapshot) return;
+      const block = state.blocks.find(b => b.id === blockId);
+      if (!block) return;
+
+      block.categories = JSON.parse(JSON.stringify(snapshot.categories || {}));
+      block.params = JSON.parse(JSON.stringify(snapshot.params || {}));
+      block.resolution = snapshot.resolution || '';
+
+      saveState();
+      renderEditor();
+      closeLightbox();
+      showToast('已成功還原生成設定到卡片！');
+    }
+
+    function downloadImage(base64Data, filename) {
+      const a = document.createElement('a');
+      a.href = base64Data;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
 
     function compilePrompt(block, commonPrompt, separator = ', ') {

@@ -187,6 +187,8 @@ const runCode = new Function('env', `
     updateApiUrl,
     processQueue,
     triggerBlockGeneration,
+    applySnapshotToBlock,
+    downloadImage,
     state
   };
 `);
@@ -226,6 +228,8 @@ test('Editor State and Collapse Operations', async (t) => {
     updateApiUrl,
     processQueue,
     triggerBlockGeneration,
+    applySnapshotToBlock,
+    downloadImage,
     state
   } = exports;
 
@@ -745,5 +749,77 @@ test('Editor State and Collapse Operations', async (t) => {
 
     // Restore fetch
     global.fetch = originalFetch;
+  });
+
+  await t.test('Task 4: applySnapshotToBlock parameter restore logic', async () => {
+    // 1. Setup state
+    state.blocks = [
+      {
+        id: 'block-4-test',
+        name: 'Block #4 Test',
+        resolution: '1024x1024',
+        collapsedCategories: {},
+        categories: {
+          quality: 'masterpiece',
+          style: 'anime',
+          character: 'original'
+        },
+        params: {
+          steps: '20',
+          cfgScale: '7',
+          samplerName: 'Euler a',
+          seed: '111',
+          negativePrompt: 'lowres'
+        }
+      }
+    ];
+
+    const snapshot = {
+      categories: {
+        quality: 'ultra-detailed',
+        style: 'realistic',
+        character: 'girl'
+      },
+      params: {
+        steps: '30',
+        cfgScale: '9.0',
+        samplerName: 'DPM++ 2M Karras',
+        seed: '999',
+        negativePrompt: 'bad anatomy'
+      },
+      resolution: '768x1344'
+    };
+
+    // Spy on getElementById to verify renderEditor is called
+    let getElementByIdCalls = [];
+    const originalGetElementById = mockEnv.document.getElementById;
+    mockEnv.document.getElementById = (id) => {
+      getElementByIdCalls.push(id);
+      return originalGetElementById(id);
+    };
+
+    // 2. Call applySnapshotToBlock
+    applySnapshotToBlock('block-4-test', snapshot);
+
+    // 3. Verify state block update
+    const updatedBlock = state.blocks.find(b => b.id === 'block-4-test');
+    assert.deepStrictEqual(updatedBlock.categories, snapshot.categories);
+    assert.deepStrictEqual(updatedBlock.params, snapshot.params);
+    assert.strictEqual(updatedBlock.resolution, snapshot.resolution);
+
+    // 4. Verify saveState (persisted in localStorage)
+    const storedStateStr = mockEnv.localStorage.getItem('prompt_set_editor_state');
+    assert.ok(storedStateStr);
+    const storedState = JSON.parse(storedStateStr);
+    const storedBlock = storedState.blocks.find(b => b.id === 'block-4-test');
+    assert.deepStrictEqual(storedBlock.categories, snapshot.categories);
+    assert.deepStrictEqual(storedBlock.params, snapshot.params);
+    assert.strictEqual(storedBlock.resolution, snapshot.resolution);
+
+    // 5. Verify renderEditor was triggered (checked DOM operations)
+    assert.ok(getElementByIdCalls.includes('prompt-cards-root'));
+
+    // Restore spy
+    mockEnv.document.getElementById = originalGetElementById;
   });
 });
