@@ -1336,6 +1336,11 @@
       document.body.removeChild(a);
     }
 
+    function stripComments(text) {
+      if (!text) return text;
+      return text.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();
+    }
+
     function compilePrompt(block, commonPrompt, separator = ', ') {
       const parts = [];
       for (const key of CATEGORY_KEYS) {
