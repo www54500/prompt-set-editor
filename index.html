@@ -515,9 +515,104 @@
     #file-input {
       display: none;
     }
+
+    /* A1111 Parameters Layout */
+    .params-section {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.15);
+    }
+    .params-title {
+      font-family: var(--font-title);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #a5b4fc;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .params-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1.5fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 768px) {
+      .params-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .param-box {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .param-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .param-input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #f1f5f9;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .param-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+    .param-input::placeholder {
+      color: #475569;
+    }
+    .param-hint {
+      font-size: 0.7rem;
+      color: #64748b;
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+    .card-params-details {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+    .card-params-summary {
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+      outline: none;
+      transition: color 0.2s;
+    }
+    .card-params-summary:hover {
+      color: #cbd5e1;
+    }
   </style>
 </head>
 <body>
+  <datalist id="samplers-list">
+    <option value="Euler a"></option>
+    <option value="Euler"></option>
+    <option value="Heun"></option>
+    <option value="DPM++ 2M Karras"></option>
+    <option value="DPM++ SDE Karras"></option>
+    <option value="DPM++ 2M SDE Karras"></option>
+    <option value="DPM++ 2M SDE Exponential"></option>
+    <option value="DPM++ 2S a Karras"></option>
+    <option value="DDIM"></option>
+    <option value="UniPC"></option>
+  </datalist>
 
   <header>
     <div class="logo-container">
@@ -608,6 +703,13 @@
       commonPrompt: {
         quality: '', style: '', character: '', face: '', body: '', clothes: '', faceAction: '', bodyAction: '', background: '', lora: ''
       },
+      commonParams: {
+        negativePrompt: '',
+        steps: '',
+        cfgScale: '',
+        samplerName: '',
+        seed: ''
+      },
       blocks: [],
       activeCompareCategory: null
     };
@@ -637,6 +739,23 @@
                 state.commonPrompt[key] = '';
               }
             }
+
+            // Initialize commonParams if undefined
+            if (!state.commonParams) {
+              state.commonParams = {
+                negativePrompt: '',
+                steps: '',
+                cfgScale: '',
+                samplerName: '',
+                seed: ''
+              };
+            } else {
+              const paramKeys = ['negativePrompt', 'steps', 'cfgScale', 'samplerName', 'seed'];
+              paramKeys.forEach(k => {
+                if (state.commonParams[k] === undefined) state.commonParams[k] = '';
+              });
+            }
+
             state.blocks.forEach(block => {
               if (!block.collapsedCategories) {
                 block.collapsedCategories = {};
@@ -660,6 +779,22 @@
                   block.categories[key] = '';
                 }
               }
+
+              // Initialize block params if undefined
+              if (!block.params) {
+                block.params = {
+                  negativePrompt: '',
+                  steps: '',
+                  cfgScale: '',
+                  samplerName: '',
+                  seed: ''
+                };
+              } else {
+                const paramKeys = ['negativePrompt', 'steps', 'cfgScale', 'samplerName', 'seed'];
+                paramKeys.forEach(k => {
+                  if (block.params[k] === undefined) block.params[k] = '';
+                });
+              }
             });
           }
         }
@@ -677,6 +812,13 @@
           resolution: '',
           categories: {
             quality: '', style: '', character: '', face: '', body: '', clothes: '', faceAction: '', bodyAction: '', background: '', lora: ''
+          },
+          params: {
+            negativePrompt: '',
+            steps: '',
+            cfgScale: '',
+            samplerName: '',
+            seed: ''
           }
         });
       }
@@ -696,11 +838,16 @@
         const commonVal = (commonPrompt[key] || '').trim();
         const blockVal = (block.categories[key] || '').trim();
         let merged = '';
-        if (commonVal && blockVal) {
+        
+        const trimmedBlockVal = blockVal.trim();
+        if (trimmedBlockVal.startsWith('=')) {
+          merged = trimmedBlockVal.slice(1).trim();
+        } else if (commonVal && blockVal) {
           merged = commonVal + ', ' + blockVal;
         } else {
           merged = commonVal || blockVal;
         }
+        
         if (merged) {
           parts.push(merged);
         }
@@ -725,6 +872,13 @@
         resolution: '',
         categories: {
           quality: '', style: '', character: '', face: '', body: '', clothes: '', faceAction: '', bodyAction: '', background: '', lora: ''
+        },
+        params: {
+          negativePrompt: '',
+          steps: '',
+          cfgScale: '',
+          samplerName: '',
+          seed: ''
         }
       };
       state.blocks.push(newBlock);
@@ -742,7 +896,14 @@
         isCollapsed: original.isCollapsed,
         collapsedCategories: { ...original.collapsedCategories },
         resolution: original.resolution || '',
-        categories: { ...original.categories }
+        categories: { ...original.categories },
+        params: original.params ? { ...original.params } : {
+          negativePrompt: '',
+          steps: '',
+          cfgScale: '',
+          samplerName: '',
+          seed: ''
+        }
       };
       state.blocks.splice(idx + 1, 0, clone);
       saveState();
@@ -948,10 +1109,67 @@
       }
     }
 
+    function updateCommonParam(key, value) {
+      if (!state.commonParams) {
+        state.commonParams = {};
+      }
+      state.commonParams[key] = value;
+      saveState();
+    }
+
+    function updateBlockParam(id, key, value) {
+      const block = state.blocks.find(b => b.id === id);
+      if (block) {
+        if (!block.params) {
+          block.params = {};
+        }
+        block.params[key] = value;
+        saveState();
+      }
+    }
+
     // Modal view trigger
     function openExportModal() {
       const lines = state.blocks.map(b => {
         let prompt = compilePrompt(b, state.commonPrompt, ', ');
+        
+        // Compile A1111 textbox format parameters
+        // 1. Negative Prompt (merge or override based on = prefix)
+        const blockNeg = (b.params?.negativePrompt || '').trim();
+        const commonNeg = (state.commonParams?.negativePrompt || '').trim();
+        let finalNeg = '';
+        if (blockNeg.startsWith('=')) {
+          finalNeg = blockNeg.slice(1).trim();
+        } else if (commonNeg && blockNeg) {
+          finalNeg = commonNeg + ', ' + blockNeg;
+        } else {
+          finalNeg = commonNeg || blockNeg;
+        }
+        if (finalNeg) {
+          prompt += ` --negative_prompt "${finalNeg}"`;
+        }
+
+        // Helper to compile overwrite-based simple parameters (Steps, CFG Scale, Sampler, Seed)
+        const compileParam = (flagName, blockVal, commonVal, isString = false) => {
+          const bVal = (blockVal || '').trim();
+          const cVal = (commonVal || '').trim();
+          let val = '';
+          if (bVal.startsWith('=')) {
+            val = bVal.slice(1).trim();
+          } else {
+            val = bVal || cVal;
+          }
+          if (val) {
+            return isString ? ` --${flagName} "${val}"` : ` --${flagName} ${val}`;
+          }
+          return '';
+        };
+
+        prompt += compileParam('steps', b.params?.steps, state.commonParams?.steps);
+        prompt += compileParam('cfg_scale', b.params?.cfgScale, state.commonParams?.cfgScale);
+        prompt += compileParam('sampler_name', b.params?.samplerName, state.commonParams?.samplerName, true);
+        prompt += compileParam('seed', b.params?.seed, state.commonParams?.seed);
+
         if (b.resolution) {
           prompt += getResolutionFlags(b.resolution);
         }
@@ -1104,6 +1322,58 @@
         <div class="categories-grid">
           ${commonFieldsHTML}
         </div>
+        <div class="params-section">
+          <div class="params-title">
+            <i data-lucide="sliders" style="width:16px;height:16px"></i>
+            ⚙️ A1111 全局參數設定 (Negative Prompt 與生成設定)
+          </div>
+          <div class="params-grid">
+            <div class="param-box">
+              <label class="param-label" title="通用負面提示詞">❌ Negative Prompt</label>
+              <textarea class="param-input" style="height: 32px; resize: vertical; min-height: 32px;" 
+                placeholder="例如：easynegative, lowres..."
+                oninput="updateCommonParam('negativePrompt', this.value)"
+              >${state.commonParams?.negativePrompt || ''}</textarea>
+              <span class="param-hint">通用負面提示詞</span>
+            </div>
+            <div class="param-box">
+              <label class="param-label" title="生成步數">⏱️ Steps</label>
+              <input type="text" class="param-input" 
+                placeholder="預設 (e.g. 20)"
+                value="${state.commonParams?.steps || ''}"
+                oninput="updateCommonParam('steps', this.value)"
+              >
+              <span class="param-hint">預設步數</span>
+            </div>
+            <div class="param-box">
+              <label class="param-label" title="提示詞引導係數">🎚️ CFG Scale</label>
+              <input type="text" class="param-input" 
+                placeholder="預設 (e.g. 7)"
+                value="${state.commonParams?.cfgScale || ''}"
+                oninput="updateCommonParam('cfgScale', this.value)"
+              >
+              <span class="param-hint">CFG 係數</span>
+            </div>
+            <div class="param-box">
+              <label class="param-label" title="採樣器名稱">🎯 Sampler</label>
+              <input type="text" class="param-input" list="samplers-list"
+                placeholder="預設 (e.g. Euler a)"
+                value="${state.commonParams?.samplerName || ''}"
+                oninput="updateCommonParam('samplerName', this.value)"
+              >
+              <span class="param-hint">點擊選擇或輸入</span>
+            </div>
+            <div class="param-box">
+              <label class="param-label" title="隨機種子">🎲 Seed</label>
+              <input type="text" class="param-input" 
+                placeholder="預設 (e.g. -1)"
+                value="${state.commonParams?.seed || ''}"
+                oninput="updateCommonParam('seed', this.value)"
+              >
+              <span class="param-hint">隨機種子</span>
+            </div>
+          </div>
+        </div>
       `;
 
       // 3. Render Cards list
@@ -1197,6 +1467,60 @@
           <div class="categories-grid">
             ${fieldsHTML}
           </div>
+          ${!isCardCollapsed ? `
+            <details class="card-params-details">
+              <summary class="card-params-summary">
+                <i data-lucide="sliders" style="width: 14px; height: 14px;"></i>
+                ⚙️ A1111 參數設定 (摺疊，點擊展開) — 最前面加上 = 可完全覆寫/清空全域設定
+              </summary>
+              <div class="params-grid" style="margin-top: 12px;">
+                <div class="param-box">
+                  <label class="param-label" title="通用負面提示詞">❌ Negative Prompt</label>
+                  <textarea class="param-input" style="height: 32px; resize: vertical; min-height: 32px;" 
+                    placeholder="例如：=worst quality 或 額外負面詞..."
+                    oninput="updateBlockParam('${block.id}', 'negativePrompt', this.value)"
+                  >${block.params?.negativePrompt || ''}</textarea>
+                  <span class="param-hint">未加 = 則與全域負面詞合併</span>
+                </div>
+                <div class="param-box">
+                  <label class="param-label" title="生成步數">⏱️ Steps</label>
+                  <input type="text" class="param-input" 
+                    placeholder="例如：=30 或 25..."
+                    value="${block.params?.steps || ''}"
+                    oninput="updateBlockParam('${block.id}', 'steps', this.value)"
+                  >
+                  <span class="param-hint">未加 = 則覆寫，留空繼承</span>
+                </div>
+                <div class="param-box">
+                  <label class="param-label" title="提示詞引導係數">🎚️ CFG Scale</label>
+                  <input type="text" class="param-input" 
+                    placeholder="例如：=5.5 或 8..."
+                    value="${block.params?.cfgScale || ''}"
+                    oninput="updateBlockParam('${block.id}', 'cfgScale', this.value)"
+                  >
+                  <span class="param-hint">未加 = 則覆寫，留空繼承</span>
+                </div>
+                <div class="param-box">
+                  <label class="param-label" title="採樣器名稱">🎯 Sampler</label>
+                  <input type="text" class="param-input" list="samplers-list"
+                    placeholder="例如：=Euler a..."
+                    value="${block.params?.samplerName || ''}"
+                    oninput="updateBlockParam('${block.id}', 'samplerName', this.value)"
+                  >
+                  <span class="param-hint">未加 = 則覆寫，留空繼承</span>
+                </div>
+                <div class="param-box">
+                  <label class="param-label" title="隨機種子">🎲 Seed</label>
+                  <input type="text" class="param-input" 
+                    placeholder="例如：=12345..."
+                    value="${block.params?.seed || ''}"
+                    oninput="updateBlockParam('${block.id}', 'seed', this.value)"
+                  >
+                  <span class="param-hint">未加 = 則覆寫，留空繼承</span>
+                </div>
+              </div>
+            </details>
+          ` : ''}
         `;
 
         cardsRoot.appendChild(card);

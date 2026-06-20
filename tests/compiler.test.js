@@ -72,6 +72,8 @@ const runCode = new Function('env', `
     getResolutionFlags,
     updateBlockResolution,
     openExportModal,
+    updateCommonParam,
+    updateBlockParam,
     state
   };
 `);
@@ -95,6 +97,8 @@ test('Editor State and Collapse Operations', async (t) => {
     getResolutionFlags,
     updateBlockResolution,
     openExportModal,
+    updateCommonParam,
+    updateBlockParam,
     state
   } = exports;
 
@@ -240,5 +244,66 @@ test('Editor State and Collapse Operations', async (t) => {
     assert.strictEqual(lines[0].endsWith('--width 1024 --height 1024'), true);
     // Block 2 should not have resolution flags appended
     assert.strictEqual(lines[1].includes('--width'), false);
+  });
+
+  await t.test('compilePrompt with "=" prefix should override common positive prompt', () => {
+    // Common style is 'anime style'. Let's override it in block-1 style.
+    state.blocks[0].categories.style = '=oil painting style';
+    const compiled = compilePrompt(state.blocks[0], state.commonPrompt, ', ');
+    assert.strictEqual(compiled.includes('anime style'), false);
+    assert.strictEqual(compiled.includes('oil painting style'), true);
+
+    // Test with spaces inside or around prefix
+    state.blocks[0].categories.style = ' =   photorealistic style  ';
+    const compiled2 = compilePrompt(state.blocks[0], state.commonPrompt, ', ');
+    assert.strictEqual(compiled2.includes('anime style'), false);
+    assert.strictEqual(compiled2.includes('photorealistic style'), true);
+
+    // Revert style for other tests
+    state.blocks[0].categories.style = '';
+  });
+
+  await t.test('updateCommonParam and updateBlockParam state and conversion checks', () => {
+    // 1. Test update handlers
+    updateCommonParam('negativePrompt', 'easynegative, lowres');
+    updateCommonParam('steps', '20');
+    updateCommonParam('cfgScale', '7');
+    updateCommonParam('samplerName', 'Euler a');
+    updateCommonParam('seed', '-1');
+
+    assert.strictEqual(state.commonParams.negativePrompt, 'easynegative, lowres');
+    assert.strictEqual(state.commonParams.steps, '20');
+
+    updateBlockParam('block-1', 'steps', '30');
+    updateBlockParam('block-1', 'negativePrompt', 'bad hands'); // Should merge to: "easynegative, lowres, bad hands"
+    assert.strictEqual(state.blocks[0].params.steps, '30');
+    assert.strictEqual(state.blocks[0].params.negativePrompt, 'bad hands');
+
+    updateBlockParam('block-2', 'negativePrompt', '=worst quality'); // Overwrite negative
+    updateBlockParam('block-2', 'cfgScale', '=9'); // Overwrite cfg
+    updateBlockParam('block-2', 'samplerName', '=DPM++ 2M Karras'); // Overwrite sampler
+    updateBlockParam('block-2', 'seed', '=12345'); // Overwrite seed
+
+    // Run export compilation
+    openExportModal();
+    const textareaEl = mockElements['export-textarea'];
+    assert.ok(textareaEl);
+
+    const lines = textareaEl.value.split('\n');
+    assert.strictEqual(lines.length, 2);
+
+    // Line 1: Block 1. Steps 30 (overwritten), Negative merged (easynegative, lowres, bad hands)
+    assert.strictEqual(lines[0].includes('--negative_prompt "easynegative, lowres, bad hands"'), true);
+    assert.strictEqual(lines[0].includes('--steps 30'), true);
+    assert.strictEqual(lines[0].includes('--cfg_scale 7'), true); // Inherited from common
+    assert.strictEqual(lines[0].includes('--sampler_name "Euler a"'), true); // Inherited from common
+
+    // Line 2: Block 2. Overwritten negative, cfg, sampler, seed
+    assert.strictEqual(lines[1].includes('--negative_prompt "worst quality"'), true);
+    assert.strictEqual(lines[1].includes('--negative_prompt "easynegative'), false); // Should NOT have common negative
+    assert.strictEqual(lines[1].includes('--steps 20'), true); // Inherited from common
+    assert.strictEqual(lines[1].includes('--cfg_scale 9'), true);
+    assert.strictEqual(lines[1].includes('--sampler_name "DPM++ 2M Karras"'), true);
+    assert.strictEqual(lines[1].includes('--seed 12345'), true);
   });
 });
