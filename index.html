@@ -1070,31 +1070,33 @@
       });
     }
 
-    function enqueueGeneration(blockId) {
-      if (generationQueue.includes(blockId)) return;
-      generationQueue.push(blockId);
+    function enqueueGeneration(blockId, isDraft = false) {
+      if (generationQueue.some(item => item.blockId === blockId && item.isDraft === isDraft)) return;
+      generationQueue.push({ blockId, isDraft });
       processQueue();
     }
 
     function processQueue() {
       if (isGenerating || generationQueue.length === 0) return;
       isGenerating = true;
-      const nextBlockId = generationQueue.shift();
-      triggerBlockGeneration(nextBlockId)
+      const nextItem = generationQueue.shift();
+      triggerBlockGeneration(nextItem.blockId, nextItem.isDraft)
         .finally(() => {
           isGenerating = false;
           processQueue();
         });
     }
 
-    function triggerBlockGeneration(blockId) {
+    function triggerBlockGeneration(blockId, isDraft = false) {
       if (window.triggerBlockGenerationOverride) {
         return window.triggerBlockGenerationOverride(blockId);
       }
       const block = state.blocks.find(b => b.id === blockId);
       if (!block) return Promise.resolve();
 
-      const btn = document.getElementById(`btn-gen-${blockId}`);
+      const btnGen = document.getElementById(`btn-gen-${blockId}`);
+      const btnDraft = document.getElementById(`btn-draft-${blockId}`);
+      const btn = isDraft && btnDraft ? btnDraft : btnGen;
       const originalHTML = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
@@ -1102,7 +1104,10 @@
       }
 
       // Compile payload
-      const positive = compilePrompt(block, state.commonPrompt, ', ');
+      let positive = compilePrompt(block, state.commonPrompt, ', ');
+      if (isDraft) {
+        positive += ', <lora:sdxl_lightning_8step_lora:1>';
+      }
       
       // Negative Prompt
       const blockNeg = (block.params?.negativePrompt || '').trim();
@@ -1129,9 +1134,14 @@
         return v || defaultVal;
       };
 
-      const steps = parseInt(resolveParam(block.params?.steps, state.commonParams?.steps, '20'), 10);
-      const cfg = parseFloat(resolveParam(block.params?.cfgScale, state.commonParams?.cfgScale, '7.0'));
+      let steps = parseInt(resolveParam(block.params?.steps, state.commonParams?.steps, '20'), 10);
+      let cfg = parseFloat(resolveParam(block.params?.cfgScale, state.commonParams?.cfgScale, '7.0'));
       const sampler = resolveParam(block.params?.samplerName, state.commonParams?.samplerName, 'Euler a');
+
+      if (isDraft) {
+        steps = 8;
+        cfg = 1;
+      }
       const seed = parseInt(resolveParam(block.params?.seed, state.commonParams?.seed, '-1'), 10);
 
       let width = 1024;
@@ -1172,7 +1182,8 @@
           const snapshot = {
             categories: { ...block.categories },
             params: { ...block.params },
-            resolution: block.resolution || ''
+            resolution: block.resolution || '',
+            isDraft: isDraft
           };
           return saveImageToHistory(blockId, base64, snapshot).then(() => {
             loadAndRenderGallery(blockId);
@@ -1206,8 +1217,16 @@
         thumbsContainer.innerHTML = '';
         images.forEach(img => {
           const imgEl = document.createElement('div');
-          imgEl.style = 'width:64px; height:64px; background-size: cover; background-position: center; border-radius:4px; border:1px solid #475569; cursor:pointer; transition: transform 0.1s;';
+          imgEl.style = 'width:64px; height:64px; background-size: cover; background-position: center; border-radius:4px; border:1px solid #475569; cursor:pointer; transition: transform 0.1s; position: relative;';
           imgEl.style.backgroundImage = `url(${img.base64Data})`;
+          
+          if (img.paramsSnapshot && img.paramsSnapshot.isDraft) {
+            const badge = document.createElement('div');
+            badge.innerText = '草稿';
+            badge.style = 'position:absolute; bottom:2px; right:2px; background:rgba(99,102,241,0.9); color:white; font-size:10px; padding:2px 4px; border-radius:3px; line-height:1; pointer-events:none; font-weight:bold;';
+            imgEl.appendChild(badge);
+          }
+
           imgEl.onclick = () => openLightbox(img);
           imgEl.onmouseenter = () => { imgEl.style.transform = 'scale(1.05)'; };
           imgEl.onmouseleave = () => { imgEl.style.transform = 'scale(1)'; };
@@ -1227,9 +1246,10 @@
       if (!modal || !lightboxImg) return;
 
       lightboxImg.src = img.base64Data;
-      lightboxTime.innerText = new Date(img.timestamp).toLocaleString();
-      
       const snap = img.paramsSnapshot || {};
+      const draftText = snap.isDraft ? '<span style="color:#a855f7; font-weight:bold; margin-right:8px;">[草稿]</span>' : '';
+      lightboxTime.innerHTML = draftText + new Date(img.timestamp).toLocaleString();
+      
       lightboxResolution.innerText = snap.resolution || '未指定 (預設 1024x1024)';
 
       // Render params
@@ -1928,6 +1948,9 @@
             </div>
             <div class="card-actions">
               ${!isCardCollapsed ? `
+                <button class="btn" id="btn-draft-${block.id}" style="padding: 6px 12px; background: #6366f1; color: white; border-color: #6366f1;" onclick="enqueueGeneration('${block.id}', true)">
+                  <i data-lucide="pencil" style="width:14px;height:14px"></i>🖍️ 草稿
+                </button>
                 <button class="btn" id="btn-gen-${block.id}" style="padding: 6px 12px; background: #10b981; color: white; border-color: #10b981;" onclick="enqueueGeneration('${block.id}')">
                   <i data-lucide="play" style="width:14px;height:14px"></i>🎨 產圖
                 </button>

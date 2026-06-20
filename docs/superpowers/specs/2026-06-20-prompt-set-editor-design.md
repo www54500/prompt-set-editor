@@ -156,6 +156,7 @@ For each block, compile a final prompt string:
 
 ### 6.2 Generation Actions & Flow
 - **Card-level Generation**: A "🎨 產圖" button on each expanded card. Displays loading/progress state when clicked.
+- **Draft Generation**: A "🖍️ 草稿" button on each expanded card. Injects `<lora:sdxl_lightning_8step_lora:1>` into the prompt and overrides parameters with `steps = 8` and `cfg_scale = 1` for rapid testing.
 - **Global Batch Generation**: A "⚡ 批次生成" button in the header that generates all active blocks sequentially.
 - **Queue Control**: Prevents concurrent requests by processing generations in a sequential queue.
 
@@ -164,7 +165,7 @@ For each block, compile a final prompt string:
   - `blockId` (string)
   - `timestamp` (number)
   - `base64Data` (string, raw PNG data url)
-  - `paramsSnapshot` (object containing categories, params, and resolution at the time of generation)
+  - `paramsSnapshot` (object containing categories, params, resolution, and `isDraft` flag at the time of generation)
 - **Automatic Pruning**:
   - Max 10 images stored per block card.
   - Orphaned images (where `blockId` is not present in `state.blocks`) are deleted on startup and on JSON workspace import.
@@ -172,7 +173,7 @@ For each block, compile a final prompt string:
 
 ### 6.4 Lightbox Modal (Click to Enlarge)
 - Shows high-res image on the left.
-- Shows prompt and parameter snapshot on the right.
+- Shows prompt and parameter snapshot on the right. (Adds a `[草稿]` badge if generated as a draft).
 - Buttons to `💾 下載圖片` (Save to file) and `🔄 套用設定到此卡片` (restores categories/params snapshot back to card).
 
 ---
