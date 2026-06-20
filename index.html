@@ -1110,8 +1110,8 @@
       }
       
       // Negative Prompt
-      const blockNeg = (block.params?.negativePrompt || '').trim();
-      const commonNeg = (state.commonParams?.negativePrompt || '').trim();
+      const blockNeg = stripComments((block.params?.negativePrompt || '').trim());
+      const commonNeg = stripComments((state.commonParams?.negativePrompt || '').trim());
       let finalNeg = '';
       if (blockNeg.startsWith('=')) {
         finalNeg = blockNeg.slice(1).trim();
@@ -1344,8 +1344,8 @@
     function compilePrompt(block, commonPrompt, separator = ', ') {
       const parts = [];
       for (const key of CATEGORY_KEYS) {
-        const commonVal = (commonPrompt[key] || '').trim();
-        const blockVal = (block.categories[key] || '').trim();
+        const commonVal = stripComments((commonPrompt[key] || '').trim());
+        const blockVal = stripComments((block.categories[key] || '').trim());
         let merged = '';
         
         const trimmedBlockVal = blockVal.trim();
@@ -1583,8 +1583,8 @@
       const keys = ['quality', 'style', 'face', 'faceAction', 'bodyAction', 'lora'];
       const parts = [];
       for (const key of keys) {
-        const commonVal = (state.commonPrompt[key] || '').trim();
-        const blockVal = (block.categories[key] || '').trim();
+        const commonVal = stripComments((state.commonPrompt[key] || '').trim());
+        const blockVal = stripComments((block.categories[key] || '').trim());
         let merged = '';
         if (blockVal.startsWith('=')) {
           merged = blockVal.slice(1).trim();
