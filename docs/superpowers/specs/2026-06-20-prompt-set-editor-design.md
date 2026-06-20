@@ -43,6 +43,10 @@ The application compiles multiple cards (prompt blocks) prepended with a "Common
    - Card collapse button (collapse all categories inside a card, showing only a preview summary).
    - Global card collapse controls (collapse/expand all blocks).
    - Global category comparison filter (e.g. click "Clothing" to collapse all other categories in all cards, showing only the "Clothing" field for quick comparative review).
+9. **A1111 Parameters & Resolution Controls**:
+   - Each card has a Resolution selector dropdown (e.g. `w1024 x h1024`, `w1344 x h768`) to set custom sizes for batch export.
+   - Global and card-level A1111 parameter blocks (Negative Prompt, Steps, CFG Scale, Sampler, Seed). Card-level parameters are folded inside an accordion details view.
+   - **Prefix `=` Overrides**: If a positive prompt category or negative prompt starts with `=`, it completely overwrites the global counterpart rather than merging. For numerical/name parameters, adding `=` as the entire value blocks inheritance (hides the flag).
 
 ---
 
@@ -67,6 +71,13 @@ let state = {
     background: "",
     lora: ""
   },
+  commonParams: {
+    negativePrompt: "",
+    steps: "",
+    cfgScale: "",
+    samplerName: "",
+    seed: ""
+  },
   blocks: [
     {
       id: "uuid-v4",
@@ -77,6 +88,7 @@ let state = {
         style: false,
         // ...
       },
+      resolution: "",
       categories: {
         quality: "",
         style: "",
@@ -88,6 +100,13 @@ let state = {
         bodyAction: "",
         background: "",
         lora: ""
+      },
+      params: {
+        negativePrompt: "",
+        steps: "",
+        cfgScale: "",
+        samplerName: "",
+        seed: ""
       }
     }
   ],
@@ -101,12 +120,18 @@ For each block, compile a final prompt string:
 2. For each category `key`:
    - Let `commonVal = state.commonPrompt[key]`
    - Let `blockVal = block.categories[key]`
-   - If both have text: join them with a comma `commonVal + ", " + blockVal`
-   - If only one has text: use that value.
+   - If `blockVal` starts with `=` (after trimming): completely overwrite with the remainder of `blockVal` (ignoring `commonVal`).
+   - Else if both have text: join them with a comma `commonVal + ", " + blockVal`.
+   - Else: use whichever has text.
 3. Join the non-empty categories using the requested separator:
    - For **Individual Clipboard Copying**: join using `\n\n` (double newline) to display each category on its own line.
-   - For **Batch Exporting (A1111 format)**: join using `, ` (comma followed by space) to produce a single-line prompt per block.
-   - For **ADetailer (Face Detailer) Copying**: compiles only `quality`, `style`, `face`, `faceAction`, `bodyAction`, and `lora` categories, and joins them using `, ` (comma followed by space) as a single line.
+   - For **ADetailer (Face Detailer) Copying**: compiles only `quality`, `style`, `face`, `faceAction`, `bodyAction`, and `lora` categories, and joins them using `, `.
+   - Resolution and parameters are **EXCLUDED** from individual/ADetailer clipboard copies to keep prompts clean.
+4. For **Batch Exporting (A1111 Textbox format)**:
+   - Compile positive prompt as above, joined with `, `.
+   - Append negative prompt parameter: `--negative_prompt "[neg]"`. If block negative prompt starts with `=`, it overwrites the global one. Otherwise, it merges them with `, `.
+   - Append other parameters (`--steps`, `--cfg_scale`, `--sampler_name`, `--seed`) using the card values if provided, falling back to global values. Prefixing card values with `=` completely overrides the global values (a lone `=` skips/disables the flag).
+   - Append resolution flags: `--width [w] --height [h]` if block resolution is selected.
 
 ---
 
